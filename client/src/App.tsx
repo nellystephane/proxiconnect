@@ -8,9 +8,8 @@ function App() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
-        <Routes>
-          <Route path="/" element={<Accueil />} />
-        </Routes>
+        <div><p> Aller a l'ecole</p>
+        </div>
       </main>
       <Footer />
     </div>
