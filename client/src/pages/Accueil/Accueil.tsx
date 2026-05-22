@@ -1217,7 +1217,7 @@ const Accueil = () => {
         </div>
       </footer>
 
-      {/* ===== POPUP ANNONCE ===== */}
+       {/* ===== POPUP ANNONCE ===== */}
       {selectedAnnonce && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center"
@@ -1235,4 +1235,72 @@ const Accueil = () => {
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
-            </d
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#007AFF] font-bold">
+                {selectedAnnonce.createur?.prenom?.charAt(0) || '?'}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {selectedAnnonce.createur?.prenom} {selectedAnnonce.createur?.nom}
+                </p>
+                <p className="text-xs text-gray-400 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {selectedAnnonce.localisation?.ville || 'Localisation inconnue'}
+                  {selectedAnnonce.localisation?.quartier && ` - ${selectedAnnonce.localisation.quartier}`}
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-700 text-sm">{selectedAnnonce.description}</p>
+            {selectedAnnonce.localisation?.details && (
+              <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+                <strong>📍 Précisions :</strong> {selectedAnnonce.localisation.details}
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <span className="font-bold text-blue-600 text-lg">
+                {selectedAnnonce.prix.estGratuit
+                  ? 'Gratuit'
+                  : `${selectedAnnonce.prix.montant.toLocaleString()} XOF`}
+              </span>
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <Eye className="w-3 h-3" /> {selectedAnnonce.nombreVues} vues
+              </span>
+            </div>
+            <Link
+              to="/inscription"
+              className="block w-full text-center bg-[#007AFF] text-white py-3 rounded-xl font-semibold no-underline hover:bg-blue-600 transition"
+            >
+              S'inscrire pour contacter
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ===== STYLES ===== */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        .glass {
+          background: rgba(255,255,255,0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255,255,255,0.4);
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .animate-slide-up { animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(24px); }
+          @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+          .animate-float-slow { animation: floatSlow 10s ease-in-out infinite; }
+          @keyframes floatSlow { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-30px) scale(1.05); } }
+          .animate-float-delayed { animation: floatDelayed 12s ease-in-out infinite; }
+          @keyframes floatDelayed { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-25px,20px) scale(1.08); } }
+          .animate-spin-slow { animation: spin 6s linear infinite; }
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        }
+        html { scroll-behavior: smooth; }
+      `}</style>
+    </div>
+  );
+};
+
+export default Accueil;
