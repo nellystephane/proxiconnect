@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
-import AnnonceCard from '../../components/AnnonceCard/AnnonceCard';
+import AnnonceCard from '../../components/AnnonceCard/AnnonceCard.tsx';
 import API from '../../api/axios';
 
 interface Annonce {
