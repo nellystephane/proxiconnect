@@ -36,9 +36,11 @@ const register = async (req, res) => {
       prenom,
       email,
       motDePasse: hashedPassword,
-      telephone: telephone || ''
+      telephone: telephone || '',
+      localisation: {
+        ville: req.body.ville || ''
+      }
     });
-
     // Réponse
     res.status(201).json({
       _id: user._id,
