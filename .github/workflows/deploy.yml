@@ -27,6 +27,9 @@ jobs:
         run: |
           cd client
           npm install
+          
+      - name: Clear Vite cache
+        run: rm -rf client/node_modules/.vite  
 
       - name: Build frontend
         run: |
