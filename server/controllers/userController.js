@@ -16,7 +16,7 @@ const register = async (req, res) => {
     const { nom, prenom, email, motDePasse, telephone } = req.body;
 
     // Vérifier champs obligatoires
-    if (!nom || !prenom || !email || !motDePasse) {
+    if (!nom || !prenom || !email || !motDePasse|| !localisatin.ville) {
       return res.status(400).json({ message: 'Nom, prénom, email et mot de passe sont obligatoires.' });
     }
 
