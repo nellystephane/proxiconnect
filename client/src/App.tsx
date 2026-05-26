@@ -36,10 +36,12 @@ function AppContent() {
               <div>Profil (à créer)</div>
             </ProtectedRoute>
           } />
-          <Route path="/deposer" element={
-            <ProtectedRoute>
-              <div>Déposer (à créer)</div>
-            </ProtectedRoute>
+         // dans les routes :
+<Route path="/deposer" element={
+  <ProtectedRoute>
+    <Deposer />
+  </ProtectedRoute>
+} />
           } />
           {/* autres routes protégées */}
         </Routes>
