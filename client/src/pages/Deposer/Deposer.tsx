@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin } from 'lucide-react';
-import API from '../../api/axios';
+import API from '../../api/axios.ts';
 
 const CATEGORIES = [
   'Électricité', 'Plomberie', 'Maçonnerie', 'Peinture', 'Menuiserie',
