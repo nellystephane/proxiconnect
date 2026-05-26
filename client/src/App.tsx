@@ -40,7 +40,7 @@ function AppContent() {
           } />
           <Route path="/deposer" element={
             <ProtectedRoute>
-              <Deposer/>
+              <Deposer />
             </ProtectedRoute>
           } />
           {/* autres routes protégées */}
