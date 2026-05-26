@@ -27,7 +27,6 @@ function AppContent() {
       {isConnected && <Header />}
       <main className={isConnected ? 'pt-20 px-4 max-w-2xl mx-auto' : ''}>
         <Routes>
-          <Route path="/" element={<Accueil />} />
           <Route path="/" element={isConnected ? <AccueilConnecte /> : <Accueil />} />
           <Route path="/connexion" element={<Connexion />} />
           <Route path="/inscription" element={<Inscription />} />
