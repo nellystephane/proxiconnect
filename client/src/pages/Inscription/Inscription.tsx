@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Lock, User, Phone, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Phone, Sparkles, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 
 interface FormErrors {
