@@ -48,7 +48,7 @@ const Connexion = () => {
         setServerError('Mot de passe incorrect.');
       } else if (message.toLowerCase().includes('email') || message.toLowerCase().includes('utilisateur')) {
         setServerError('Email ou utilisateur introuvable.');
-      } else if (err.message === 'Network Error') {
+      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
         setServerError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       } else {
         setServerError(message || 'Une erreur est survenue. Veuillez réessayer.');
