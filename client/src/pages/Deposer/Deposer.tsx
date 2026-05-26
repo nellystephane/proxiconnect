@@ -595,7 +595,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         </div>
       </div>
 
-      {/* ===== GLOBAL STYLES ===== */}
+      {/* ===== GLOBAL STYLE ===== */}
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
           .animate-slide-up {
