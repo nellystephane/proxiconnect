@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Clock, MapPin } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext.tsx;
-import AnnonceCard from '../../components/AnnonceCard/AnnonceCard.tsx';
+import { useAuth } from '../../context/AuthContext';
+import AnnonceCard from '../../components/AnnonceCard/AnnonceCard';
 import API from '../../api/axios';
-
 
 interface Annonce {
   _id: string;
@@ -27,7 +25,6 @@ const AccueilConnecte = () => {
   useEffect(() => {
     const fetchAnnonces = async () => {
       try {
-        // Récupère toutes les annonces actives (ou tu peux filtrer par ville plus tard)
         const { data } = await API.get('/annonces?limite=20');
         setAnnonces(data.annonces || []);
       } catch (err) {
@@ -66,51 +63,7 @@ const AccueilConnecte = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {annonces.map((annonce) => (
-            <Link
-              key={annonce._id}
-              to={`/annonce/${annonce._id}`}
-              className="glass rounded-2xl p-5 no-underline hover:shadow-lg transition space-y-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#007AFF] font-bold">
-                  {annonce.createur?.prenom?.charAt(0) || '?'}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {annonce.createur?.prenom} {annonce.createur?.nom}
-                  </p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {annonce.localisation?.ville || 'Localisation inconnue'}
-                  </p>
-                </div>
-              </div>
-              <h3 className="font-bold text-gray-900 line-clamp-2">{annonce.titre}</h3>
-              <p className="text-gray-500 text-sm line-clamp-2">{annonce.description}</p>
-              <div className="flex items-center justify-between text-xs text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {annonce.nombreVues} vues
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(annonce.createdAt).toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </span>
-              </div>
-              <div className="pt-2 border-t border-gray-100">
-                <span className="font-bold text-blue-600">
-                  {annonce.prix.estGratuit
-                    ? 'Gratuit'
-                    : `${annonce.prix.montant.toLocaleString()} XOF`}
-                </span>
-                {annonce.prix.estNegociable && !annonce.prix.estGratuit && (
-                  <span className="text-gray-400 text-xs ml-2">(négociable)</span>
-                )}
-              </div>
-            </Link>
+            <AnnonceCard key={annonce._id} annonce={annonce} />
           ))}
         </div>
       )}
