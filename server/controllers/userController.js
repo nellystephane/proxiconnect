@@ -13,11 +13,13 @@ const generateToken = (id) => {
 // POST /api/users/register
 const register = async (req, res) => {
   try {
-    const { nom, prenom, email, motDePasse, telephone } = req.body;
+    const { nom, prenom, email, motDePasse, telephone, ville } = req.body;
 
     // Vérifier champs obligatoires
-    if (!nom || !prenom || !email || !motDePasse|| !localisatin.ville) {
-      return res.status(400).json({ message: 'Nom, prénom, email et mot de passe sont obligatoires.' });
+    if (!nom || !prenom || !email || !motDePasse || !ville) {
+      return res.status(400).json({
+        message: 'Tous les champs obligatoires doivent être remplis : nom, prénom, email, mot de passe, ville.'
+      });
     }
 
     // Vérifier si l'email existe déjà
@@ -38,20 +40,26 @@ const register = async (req, res) => {
       motDePasse: hashedPassword,
       telephone: telephone || '',
       localisation: {
-        ville: req.body.ville || ''
+        ville: ville.trim()
       }
     });
-    // Réponse
+
+    // Réponse (sans le mot de passe)
     res.status(201).json({
       _id: user._id,
       nom: user.nom,
       prenom: user.prenom,
       email: user.email,
       telephone: user.telephone,
+      localisation: user.localisation,
       token: generateToken(user._id)
     });
 
   } catch (error) {
+    // Gestion des erreurs de validation Mongoose (ex: email unique)
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Cet email est déjà utilisé.' });
+    }
     res.status(500).json({ message: 'Erreur serveur.', error: error.message });
   }
 };
@@ -124,7 +132,13 @@ const updateProfil = async (req, res) => {
     if (prenom) user.prenom = prenom;
     if (telephone) user.telephone = telephone;
     if (photo) user.photo = photo;
-    if (localisation) user.localisation = localisation;
+    if (localisation) {
+      // Mise à jour partielle ou complète de la localisation
+      user.localisation = {
+        ...user.localisation,
+        ...localisation
+      };
+    }
 
     // Si mot de passe fourni, le hasher
     if (req.body.motDePasse) {
