@@ -587,7 +587,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Publier l'annonce
+                  Publier
                 </>
               )}
             </button>
