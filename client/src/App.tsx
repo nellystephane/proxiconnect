@@ -6,6 +6,14 @@ import Accueil from './pages/Accueil/Accueil.tsx';
 import Connexion from './pages/Connexion/Connexion.tsx';
 import Inscription from './pages/Inscription/Inscription.tsx';
 import AccueilConnecte from './pages/AccueilConnecte/AccueilConnecte.tsx';
+import Deposer from './pages/Deposer/Deposer';
+
+// dans les routes :
+<Route path="/deposer" element={
+  <ProtectedRoute>
+    <Deposer />
+  </ProtectedRoute>
+} />
 
 
 
