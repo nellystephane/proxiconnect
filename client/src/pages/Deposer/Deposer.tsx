@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check } from 'lucide-react';
-import API from '../../api/axios.ts';
+import API from '../../api/axios';
 
 // ===== TYPES =====
 interface FormType {
@@ -23,7 +23,7 @@ interface FormType {
 interface CategoryOption {
   value: string;
   label: string;
-  color: string; // hex for box-shadow on AnnonceCard
+  color: string;
 }
 
 // ===== DONNÉES =====
@@ -47,7 +47,8 @@ const CATEGORIES: CategoryOption[] = [
 
 const TYPES = [
   { value: 'service', label: 'Service', color: '#3b82f6' },
-  { value: 'vente', label: 'Vente', color: '#10b981' },  { value: 'autre', label: 'Autre', color: '#64748b' },
+  { value: 'vente', label: 'Vente', color: '#10b981' },
+  { value: 'autre', label: 'Autre', color: '#64748b' },
 ];
 
 interface DeposerProps {
@@ -57,7 +58,7 @@ interface DeposerProps {
 const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   const [form, setForm] = useState<FormType>({
     titre: '',
     description: '',
@@ -71,12 +72,12 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     pays: 'Bénin',
     ville: '',
     quartier: '',
-    details: ''
+    details: '',
   });
-  
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
   const [openType, setOpenType] = useState(false);
@@ -96,6 +97,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   // Close modal with Escape + prevent body scroll
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -146,6 +148,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const removePhotoField = (index: number) => {
     setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -187,14 +190,15 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   };
 
   // ===== COMPONENTS =====
-  
+
   const CustomSelect = ({
     label,
     value,
     options,
     onSelect,
     isOpen,
-    setIsOpen,    refContainer,
+    setIsOpen,
+    refContainer,
     placeholder = 'Sélectionnez...',
   }: {
     label: string;
@@ -207,9 +211,9 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     placeholder?: string;
   }) => {
     const selected = options.find(opt => opt.value === value);
-    
+
     return (
-      <div className="space-y-2" ref={refContainer}>
+      <div className="space-y-2 relative" ref={refContainer}>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
         <button
           type="button"
@@ -222,8 +226,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         >
           <span className="flex items-center gap-3">
             {selected && (
-              <span 
-                className="w-3 h-3 rounded-full" 
+              <span
+                className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: (selected as CategoryOption).color }}
               />
             )}
@@ -243,7 +247,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           <div className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
             <div className="max-h-56 overflow-y-auto py-1">
               {options.map((opt) => {
-                const isSelected = opt.value === value;                return (
+                const isSelected = opt.value === value;
+                return (
                   <button
                     key={opt.value}
                     type="button"
@@ -254,8 +259,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                         : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <span 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: opt.color }}
                     />
                     <span className="flex-1 text-sm font-medium">{opt.label}</span>
@@ -292,7 +297,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
         checked ? 'bg-[#007AFF]' : 'bg-slate-200'
       } ${disabled ? 'opacity-50' : ''}`}>
-        <input          type="checkbox"
+        <input
+          type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
@@ -307,17 +313,18 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30"
+      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30"
       onClick={handleClose}
     >
-      {/* Modal Card - slides up from bottom */}
+      {/* Modal Card - slides up from bottom on mobile, centered on desktop */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+        className="relative w-full max-w-2xl max-h-[97vh] md:max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
+        style={{ overscrollBehavior: 'contain' }}
       >
         {/* Header avec close */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#007AFF]">
               <Sparkles className="w-4 h-4 text-white" />
@@ -338,15 +345,14 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
         {/* Scrollable content */}
         <div className="px-6 pb-6 pt-4 space-y-6">
-          
           {/* Error message */}
           {error && (
-            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">              {error}
+            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            
             {/* Titre */}
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
@@ -359,9 +365,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 required
                 maxLength={100}
               />
-              <div className="text-right text-[10px] text-slate-400">
-                {form.titre.length}/100
-              </div>
+              <div className="text-right text-[10px] text-slate-400">{form.titre.length}/100</div>
             </div>
 
             {/* Description */}
@@ -377,9 +381,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 required
                 maxLength={500}
               />
-              <div className="text-right text-[10px] text-slate-400">
-                {form.description.length}/500
-              </div>
+              <div className="text-right text-[10px] text-slate-400">{form.description.length}/500</div>
             </div>
 
             {/* Catégorie + Type */}
@@ -390,25 +392,23 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 options={CATEGORIES}
                 onSelect={(v) => handleSelect('categorie', v)}
                 isOpen={openCategory}
-                setIsOpen={setOpenCategory}                refContainer={categoryRef}
+                setIsOpen={setOpenCategory}
+                refContainer={categoryRef}
                 placeholder="Choisir une catégorie"
               />
-              
-              <div ref={typeRef}>
-                <CustomSelect
-                  label="Type"
-                  value={form.type}
-                  options={TYPES}
-                  onSelect={(v) => handleSelect('type', v)}
-                  isOpen={openType}
-                  setIsOpen={setOpenType}
-                  refContainer={typeRef}
-                  placeholder="Type d'annonce"
-                />
-              </div>
+              <CustomSelect
+                label="Type"
+                value={form.type}
+                options={TYPES}
+                onSelect={(v) => handleSelect('type', v)}
+                isOpen={openType}
+                setIsOpen={setOpenType}
+                refContainer={typeRef}
+                placeholder="Type d'annonce"
+              />
             </div>
 
-            {/* Sous-catégorie */}
+            {/* Sous-catégorie (conditionnelle) */}
             {form.categorie && (
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -427,22 +427,25 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             {/* Prix */}
             <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
-              
               <div className="flex flex-wrap gap-3">
                 <ToggleSwitch
                   checked={form.estGratuit}
                   onChange={(checked) => {
-                    setForm(prev => ({ ...prev, estGratuit: checked, estNegociable: checked ? false : prev.estNegociable }));
+                    setForm(prev => ({
+                      ...prev,
+                      estGratuit: checked,
+                      estNegociable: checked ? false : prev.estNegociable
+                    }));
                   }}
                   label="Gratuit"
                 />
                 <ToggleSwitch
                   checked={form.estNegociable}
                   onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
-                  label="Négociable"                  disabled={form.estGratuit}
+                  label="Négociable"
+                  disabled={form.estGratuit}
                 />
               </div>
-
               {!form.estGratuit && (
                 <div className="relative">
                   <input
@@ -479,7 +482,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
               <div className="space-y-3">
                 {form.photos.map((photo, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white">
-                    {/* Preview thumbnail */}
                     <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
                       {photo.trim() ? (
                         <img
@@ -488,19 +490,18 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
-                          }}                        />
+                          }}
+                        />
                       ) : (
                         <MapPin className="w-5 h-5 text-slate-300" />
                       )}
                     </div>
-                    
                     <input
                       value={photo}
                       onChange={(e) => handlePhotoChange(i, e.target.value)}
                       placeholder="https://..."
                       className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
-                    
                     {form.photos.length > 1 && (
                       <button
                         type="button"
@@ -514,7 +515,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                   </div>
                 ))}
               </div>
-              
+
               <p className="text-[10px] text-slate-400">
                 Utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
               </p>
@@ -526,7 +527,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 <MapPin className="w-4 h-4 text-[#007AFF]" />
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Localisation</label>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-medium text-slate-400">Pays</label>
@@ -537,7 +538,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Bénin"
                   />
-                </div>                <div className="space-y-2">
+                </div>
+                <div className="space-y-2">
                   <label className="block text-[10px] font-medium text-slate-400">Ville *</label>
                   <input
                     name="ville"
@@ -549,7 +551,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-medium text-slate-400">Quartier</label>
@@ -586,7 +588,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 <>
                   <Sparkles className="w-4 h-4" />
                   Publier l'annonce
-                </>              )}
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -598,9 +601,9 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           .animate-slide-up {
             animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
-            transform: translateY(100%);
           }
           @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
           }
         }
