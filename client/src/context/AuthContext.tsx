@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import API from '../api/axios';
+import API from '../api/axios.ts';
 
 interface User {
   _id: string;
@@ -17,7 +17,6 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isConnected: boolean;
-  loading: boolean; // ← ajouté
   login: (email: string, motDePasse: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
@@ -29,8 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(true); // ← initialisé à true
 
+  // Au chargement, vérifier si un token existe
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
@@ -39,7 +38,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(JSON.parse(storedUser));
       setIsConnected(true);
     }
-    setLoading(false); // ← fin de la vérification
   }, []);
 
   const login = async (email: string, motDePasse: string) => {
@@ -69,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isConnected, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isConnected, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
