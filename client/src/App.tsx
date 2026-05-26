@@ -13,12 +13,22 @@ import Deposer from './pages/Deposer/Deposer.tsx';
 
 
 
-// Composant pour protéger les routes
+// Dans App.tsx, avant le composant AppContent
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isConnected } = useAuth();
+  const { isConnected, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+  
   if (!isConnected) {
     return <Navigate to="/connexion" replace />;
   }
+  
   return children;
 };
 
