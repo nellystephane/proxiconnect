@@ -199,8 +199,6 @@ const Inscription = () => {
               {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone}</p>}
             </div>
           
-
-            // Dans le JSX, après le bloc téléphone :
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville</label>
               <div className="relative">
