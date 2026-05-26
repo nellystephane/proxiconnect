@@ -9,6 +9,7 @@ interface FormErrors {
   email?: string;
   motDePasse?: string;
   telephone?: string;
+  ville?: string;   // ← ajoute cette ligne
 }
 
 const Inscription = () => {
