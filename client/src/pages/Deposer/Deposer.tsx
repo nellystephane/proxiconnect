@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  X, Plus, Minus, Sparkles, MapPin, Image as ImageIcon,
-  ChevronDown, Check, Search, Upload, Trash2, Eye, EyeOff
-} from 'lucide-react';
+import { X, Plus, Minus, Sparkles, MapPin, Check } from 'lucide-react';
 import API from '../../api/axios.ts';
 
 // ===== TYPES =====
@@ -26,31 +23,31 @@ interface FormType {
 interface CategoryOption {
   value: string;
   label: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  color: string; // hex for box-shadow on AnnonceCard
 }
 
 // ===== DONNÉES =====
 const CATEGORIES: CategoryOption[] = [
-  { value: 'Électricité', label: 'Électricité', icon: () => <span className="text-amber-500">⚡</span> },
-  { value: 'Plomberie', label: 'Plomberie', icon: () => <span className="text-blue-500">🔧</span> },
-  { value: 'Maçonnerie', label: 'Maçonnerie', icon: () => <span className="text-orange-500">🧱</span> },
-  { value: 'Peinture', label: 'Peinture', icon: () => <span className="text-purple-500">🎨</span> },
-  { value: 'Menuiserie', label: 'Menuiserie', icon: () => <span className="text-amber-700">🪚</span> },
-  { value: 'Couture', label: 'Couture', icon: () => <span className="text-pink-500">🧵</span> },
-  { value: 'Coiffure', label: 'Coiffure', icon: () => <span className="text-violet-500">✂️</span> },
-  { value: 'Esthétique', label: 'Esthétique', icon: () => <span className="text-rose-400">💄</span> },
-  { value: 'Cours particuliers', label: 'Cours particuliers', icon: () => <span className="text-emerald-500">📚</span> },
-  { value: 'Informatique', label: 'Informatique', icon: () => <span className="text-cyan-500">💻</span> },
-  { value: 'Agriculture', label: 'Agriculture', icon: () => <span className="text-green-600">🌱</span> },
-  { value: 'Vente de produits', label: 'Vente de produits', icon: () => <span className="text-red-500">🛒</span> },
-  { value: 'Location', label: 'Location', icon: () => <span className="text-indigo-500">🔑</span> },
-  { value: 'Transport', label: 'Transport', icon: () => <span className="text-blue-600">🚗</span> },
-  { value: 'Autre', label: 'Autre', icon: () => <span className="text-slate-400">✨</span> },
+  { value: 'Électricité', label: 'Électricité', color: '#f59e0b' },
+  { value: 'Plomberie', label: 'Plomberie', color: '#3b82f6' },
+  { value: 'Maçonnerie', label: 'Maçonnerie', color: '#f97316' },
+  { value: 'Peinture', label: 'Peinture', color: '#a855f7' },
+  { value: 'Menuiserie', label: 'Menuiserie', color: '#d97706' },
+  { value: 'Couture', label: 'Couture', color: '#ec4899' },
+  { value: 'Coiffure', label: 'Coiffure', color: '#8b5cf6' },
+  { value: 'Esthétique', label: 'Esthétique', color: '#f43f5e' },
+  { value: 'Cours particuliers', label: 'Cours particuliers', color: '#10b981' },
+  { value: 'Informatique', label: 'Informatique', color: '#06b6d4' },
+  { value: 'Agriculture', label: 'Agriculture', color: '#22c55e' },
+  { value: 'Vente de produits', label: 'Vente de produits', color: '#ef4444' },
+  { value: 'Location', label: 'Location', color: '#6366f1' },
+  { value: 'Transport', label: 'Transport', color: '#3b82f6' },
+  { value: 'Autre', label: 'Autre', color: '#64748b' },
 ];
+
 const TYPES = [
-  { value: 'service', label: 'Service', desc: 'Prestation, intervention, conseil' },
-  { value: 'vente', label: 'Vente', desc: 'Produit neuf ou occasion' },
-  { value: 'autre', label: 'Autre', desc: 'Échange, don, collaboration' },
+  { value: 'service', label: 'Service', color: '#3b82f6' },
+  { value: 'vente', label: 'Vente', color: '#10b981' },  { value: 'autre', label: 'Autre', color: '#64748b' },
 ];
 
 interface DeposerProps {
@@ -79,12 +76,10 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // pour démo
   
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
   const [openType, setOpenType] = useState(false);
-  const [searchCategory, setSearchCategory] = useState('');
   const categoryRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
 
@@ -96,12 +91,12 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       }
       if (typeRef.current && !typeRef.current.contains(e.target as Node)) {
         setOpenType(false);
-      }    };
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Close modal with Escape
+  // Close modal with Escape + prevent body scroll
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
@@ -145,16 +140,12 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const addPhotoField = () => {
     if (form.photos.length < 6) {
       setForm(prev => ({ ...prev, photos: [...prev.photos, ''] }));
-    }  };
+    }
+  };
 
   const removePhotoField = (index: number) => {
     setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
   };
-
-  const filteredCategories = CATEGORIES.filter(cat =>
-    cat.label.toLowerCase().includes(searchCategory.toLowerCase())
-  );
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -194,6 +185,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       setLoading(false);
     }
   };
+
   // ===== COMPONENTS =====
   
   const CustomSelect = ({
@@ -202,97 +194,75 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     options,
     onSelect,
     isOpen,
-    setIsOpen,
-    searchValue,
-    setSearchValue,
-    refContainer,
+    setIsOpen,    refContainer,
     placeholder = 'Sélectionnez...',
-    icon: Icon
   }: {
     label: string;
     value: string;
-    options: CategoryOption[] | { value: string; label: string; desc?: string }[];
+    options: CategoryOption[] | { value: string; label: string; color: string }[];
     onSelect: (value: string) => void;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    searchValue?: string;
-    setSearchValue?: (value: string) => void;
     refContainer: React.RefObject<HTMLDivElement>;
     placeholder?: string;
-    icon?: React.ComponentType<{ className?: string }>;
   }) => {
     const selected = options.find(opt => opt.value === value);
     
     return (
       <div className="space-y-2" ref={refContainer}>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</label>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border transition-all duration-300 text-left ${
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
             isOpen
-              ? 'border-[#007AFF] bg-blue-500/10 ring-2 ring-blue-500/30'
-              : 'border-slate-700/50 bg-slate-900/60 hover:border-slate-600'
+              ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
+              : 'border-slate-200 bg-white hover:border-slate-300'
           }`}
         >
           <span className="flex items-center gap-3">
-            {Icon && selected && <Icon className="w-5 h-5 text-[#007AFF]" />}
-            <span className={value ? 'text-white' : 'text-slate-500'}>
-              {selected ? (selected as CategoryOption).label || (selected as any).label : placeholder}
+            {selected && (
+              <span 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: (selected as CategoryOption).color }}
+              />
+            )}
+            <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+              {selected ? selected.label : placeholder}
             </span>
           </span>
-          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+          <span className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
         </button>
+
         {/* Dropdown */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-2 rounded-2xl border border-slate-700/50 bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden animate-fade-in-scale">
-            {/* Search */}
-            {setSearchValue && (
-              <div className="p-3 border-b border-slate-700/50">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    placeholder="Rechercher..."
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* Options */}
-            <div className="max-h-60 overflow-y-auto py-2">
-              {filteredCategories.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-slate-500 text-center">Aucun résultat</p>
-              ) : (
-                filteredCategories.map((opt) => {
-                  const isSelected = opt.value === value;
-                  const CategoryIcon = (opt as CategoryOption).icon;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => onSelect(opt.value)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                        isSelected
-                          ? 'bg-blue-500/20 text-white'
-                          : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                      }`}
-                    >
-                      {CategoryIcon && <CategoryIcon className="w-5 h-5" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{opt.label}</p>
-                        {(opt as any).desc && (
-                          <p className="text-xs text-slate-500 truncate">{(opt as any).desc}</p>
-                        )}
-                      </div>
-                      {isSelected && <Check className="w-5 h-5 text-[#007AFF] shrink-0" />}
-                    </button>
-                  );
-                })              )}
+          <div className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+            <div className="max-h-56 overflow-y-auto py-1">
+              {options.map((opt) => {
+                const isSelected = opt.value === value;                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onSelect(opt.value)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                      isSelected
+                        ? 'bg-blue-50 text-[#007AFF]'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: opt.color }}
+                    />
+                    <span className="flex-1 text-sm font-medium">{opt.label}</span>
+                    {isSelected && <Check className="w-4 h-4 text-[#007AFF] flex-shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -311,26 +281,25 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     label: string;
     disabled?: boolean;
   }) => (
-    <label className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+    <label className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
       disabled
-        ? 'border-slate-800 bg-slate-900/30 opacity-50 cursor-not-allowed'
+        ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
         : checked
-          ? 'border-emerald-500/40 bg-emerald-500/10'
-          : 'border-slate-700/50 bg-slate-900/60 hover:border-slate-600'
+          ? 'border-emerald-200 bg-emerald-50'
+          : 'border-slate-200 bg-white hover:border-slate-300'
     }`}>
-      <span className="text-sm font-medium text-slate-300">{label}</span>
-      <div className={`relative w-12 h-7 rounded-full transition-colors duration-300 ${
-        checked ? 'bg-[#007AFF]' : 'bg-slate-700'
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+        checked ? 'bg-[#007AFF]' : 'bg-slate-200'
       } ${disabled ? 'opacity-50' : ''}`}>
-        <input
-          type="checkbox"
+        <input          type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
           className="sr-only"
         />
-        <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${
-          checked ? 'left-6' : 'left-1'
+        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+          checked ? 'left-5' : 'left-0.5'
         }`} />
       </div>
     </label>
@@ -338,50 +307,41 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30"
       onClick={handleClose}
-      role="dialog"
-      aria-modal="true"      aria-labelledby="modal-title"
     >
-      {/* Backdrop blur overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-transparent to-indigo-950/20 pointer-events-none" />
-      
-      {/* Modal Card */}
+      {/* Modal Card - slides up from bottom */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-3xl border border-slate-700/50 bg-gradient-to-br from-slate-900/95 via-slate-950/90 to-slate-900/95 backdrop-blur-2xl shadow-2xl shadow-black/60 animate-modal-slide-up"
+        className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-t-3xl shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header avec close */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-slate-900/95 to-transparent backdrop-blur-md border-b border-slate-700/30">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#007AFF] to-indigo-600 shadow-lg shadow-blue-500/30">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#007AFF]">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 id="modal-title" className="text-lg font-bold text-white">Nouvelle annonce</h2>
+              <h2 className="text-base font-semibold text-slate-900">Nouvelle annonce</h2>
               <p className="text-xs text-slate-400">Publiez en moins de 2 minutes</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 transition-all duration-300 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-400"
+            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
             aria-label="Fermer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto px-6 pb-6 pt-4 space-y-6">
+        <div className="px-6 pb-6 pt-4 space-y-6">
           
           {/* Error message */}
           {error && (
-            <div className="flex items-start gap-3 p-4 rounded-2xl border border-red-500/30 bg-red-500/10 text-sm text-red-300 animate-fade-in">
-              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
+            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">              {error}
             </div>
           )}
 
@@ -389,34 +349,35 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             
             {/* Titre */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Titre de l'annonce *</label>
-              <input                name="titre"
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
+              <input
+                name="titre"
                 value={form.titre}
                 onChange={handleChange}
-                placeholder="Ex: Électricien pro disponible pour dépannage urgent"
-                className="w-full px-4 py-3.5 bg-slate-900/60 border border-slate-700/50 rounded-2xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:border-[#007AFF] focus:ring-4 focus:ring-blue-500/20"
+                placeholder="Ex: Électricien pro disponible pour dépannage"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                 required
                 maxLength={100}
               />
-              <div className="flex justify-end text-[10px] text-slate-500">
+              <div className="text-right text-[10px] text-slate-400">
                 {form.titre.length}/100
               </div>
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Description détaillée *</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description *</label>
               <textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 rows={4}
-                placeholder="Décrivez votre service, vos tarifs, vos disponibilités, votre expérience..."
-                className="w-full px-4 py-3.5 bg-slate-900/60 border border-slate-700/50 rounded-2xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:border-[#007AFF] focus:ring-4 focus:ring-blue-500/20 resize-none"
+                placeholder="Décrivez votre service, tarifs, disponibilités..."
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all resize-none"
                 required
                 maxLength={500}
               />
-              <div className="flex justify-end text-[10px] text-slate-500">
+              <div className="text-right text-[10px] text-slate-400">
                 {form.description.length}/500
               </div>
             </div>
@@ -429,45 +390,43 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 options={CATEGORIES}
                 onSelect={(v) => handleSelect('categorie', v)}
                 isOpen={openCategory}
-                setIsOpen={setOpenCategory}
-                searchValue={searchCategory}
-                setSearchValue={setSearchCategory}
-                refContainer={categoryRef}
+                setIsOpen={setOpenCategory}                refContainer={categoryRef}
                 placeholder="Choisir une catégorie"
               />
               
               <div ref={typeRef}>
                 <CustomSelect
-                  label="Type d'annonce"
-                  value={form.type}                  options={TYPES}
+                  label="Type"
+                  value={form.type}
+                  options={TYPES}
                   onSelect={(v) => handleSelect('type', v)}
                   isOpen={openType}
                   setIsOpen={setOpenType}
                   refContainer={typeRef}
-                  placeholder="Type"
+                  placeholder="Type d'annonce"
                 />
               </div>
             </div>
 
             {/* Sous-catégorie */}
             {form.categorie && (
-              <div className="space-y-2 animate-fade-in">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Sous-catégorie <span className="text-slate-600">(optionnel)</span>
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Sous-catégorie <span className="text-slate-300">(optionnel)</span>
                 </label>
                 <input
                   name="sousCategorie"
                   value={form.sousCategorie}
                   onChange={handleChange}
                   placeholder={`Ex: pour "${form.categorie}"...`}
-                  className="w-full px-4 py-3.5 bg-slate-900/60 border border-slate-700/50 rounded-2xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:border-[#007AFF] focus:ring-4 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                 />
               </div>
             )}
 
             {/* Prix */}
-            <div className="space-y-4 p-5 rounded-2xl border border-slate-700/50 bg-slate-900/40">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Tarification</label>
+            <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
               
               <div className="flex flex-wrap gap-3">
                 <ToggleSwitch
@@ -480,22 +439,22 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 <ToggleSwitch
                   checked={form.estNegociable}
                   onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
-                  label="Négociable"
-                  disabled={form.estGratuit}
+                  label="Négociable"                  disabled={form.estGratuit}
                 />
               </div>
 
               {!form.estGratuit && (
-                <div className="relative animate-fade-in">
+                <div className="relative">
                   <input
-                    type="number"                    name="montant"
+                    type="number"
+                    name="montant"
                     value={form.montant}
                     onChange={handleChange}
                     placeholder="0"
-                    className="w-full px-4 py-3.5 bg-slate-900/60 border border-slate-700/50 rounded-2xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:border-[#007AFF] focus:ring-4 focus:ring-blue-500/20 text-right pr-16 font-semibold"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
                     min="0"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">XOF</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
                 </div>
               )}
             </div>
@@ -503,41 +462,35 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             {/* Photos */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Photos <span className="text-slate-600">({form.photos.filter(p => p.trim()).length}/6)</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Photos <span className="text-slate-300">({form.photos.filter(p => p.trim()).length}/6)</span>
                 </label>
                 {form.photos.length < 6 && (
                   <button
                     type="button"
                     onClick={addPhotoField}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-[#007AFF] hover:text-blue-400 transition-colors"
+                    className="text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Ajouter
+                    + Ajouter
                   </button>
                 )}
               </div>
 
               <div className="space-y-3">
                 {form.photos.map((photo, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700/50 bg-slate-900/40">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white">
                     {/* Preview thumbnail */}
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-slate-800 flex items-center justify-center border border-slate-700/50">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
                       {photo.trim() ? (
-                        <>
-                          <img
-                            src={photo}
-                            alt={`Preview ${i + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2"%3E%3Crect x="3" y="3" width="18" height="18" rx="2" ry="2"%3E%3C/rect%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"%3E%3C/circle%3E%3Cpolyline points="21 15 16 10 5 21"%3E%3C/polyline%3E%3C/svg%3E';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Eye className="w-5 h-5 text-white" />
-                          </div>
-                        </>
-                      ) : (                        <ImageIcon className="w-6 h-6 text-slate-600" />
+                        <img
+                          src={photo}
+                          alt={`Preview ${i + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}                        />
+                      ) : (
+                        <MapPin className="w-5 h-5 text-slate-300" />
                       )}
                     </div>
                     
@@ -545,54 +498,53 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                       value={photo}
                       onChange={(e) => handlePhotoChange(i, e.target.value)}
                       placeholder="https://..."
-                      className="flex-1 px-4 py-2.5 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-500/20"
+                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                     
                     {form.photos.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removePhotoField(i)}
-                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                        aria-label="Supprimer la photo"
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        aria-label="Supprimer"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Minus className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 ))}
               </div>
               
-              <p className="text-[10px] text-slate-500 flex items-center gap-1.5">
-                <Upload className="w-3 h-3" />
-                Pour le moment, utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
+              <p className="text-[10px] text-slate-400">
+                Utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
               </p>
             </div>
 
             {/* Localisation */}
-            <div className="space-y-4 p-5 rounded-2xl border border-slate-700/50 bg-slate-900/40">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+              <div className="flex items-center gap-2 mb-1">
                 <MapPin className="w-4 h-4 text-[#007AFF]" />
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Localisation</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Localisation</label>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-500">Pays</label>
+                  <label className="block text-[10px] font-medium text-slate-400">Pays</label>
                   <input
                     name="pays"
                     value={form.pays}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Bénin"
                   />
-                </div>
-                <div className="space-y-2">                  <label className="block text-[10px] font-medium text-slate-500">Ville *</label>
+                </div>                <div className="space-y-2">
+                  <label className="block text-[10px] font-medium text-slate-400">Ville *</label>
                   <input
                     name="ville"
                     value={form.ville}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Cotonou"
                   />
                 </div>
@@ -600,22 +552,22 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-500">Quartier</label>
+                  <label className="block text-[10px] font-medium text-slate-400">Quartier</label>
                   <input
                     name="quartier"
                     value={form.quartier}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Akpakpa"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-500">Points de repère</label>
+                  <label className="block text-[10px] font-medium text-slate-400">Points de repère</label>
                   <input
                     name="details"
                     value={form.details}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="À côté de la pharmacie..."
                   />
                 </div>
@@ -626,49 +578,35 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#007AFF] to-indigo-600 py-4 text-sm font-semibold text-white shadow-xl shadow-blue-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
+              className="w-full py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              <span className={`relative z-10 flex items-center justify-center gap-2 transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}>
-                <Sparkles className="w-4 h-4" />
-                Publier l'annonce
-              </span>
-              
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />                </div>
-              )}
-              
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              {loading ? (
+                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Publier l'annonce
+                </>              )}
             </button>
           </form>
         </div>
-
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-slate-950/95 to-transparent pointer-events-none" />
       </div>
 
       {/* ===== GLOBAL STYLES ===== */}
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
-          .animate-modal-slide-up {
-            animation: modalSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
-            transform: translateY(20px) scale(0.98);
+            transform: translateY(100%);
           }
-          @keyframes modalSlideUp {
-            to { opacity: 1; transform: translateY(0) scale(1); }
+          @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
           }
-          .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
-            opacity: 0;
-          }
-          @keyframes fadeIn { to { opacity: 1; } }
-          .animate-fade-in-scale {
-            animation: fadeInScale 0.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-            opacity: 0;
-            transform: scale(0.98);
-          }
-          @keyframes fadeInScale { to { opacity: 1; transform: scale(1); } }
+        }
+        /* Ensure modal content is scrollable */
+        .overflow-y-auto {
+          -webkit-overflow-scrolling: touch;
         }
       `}</style>
     </div>
