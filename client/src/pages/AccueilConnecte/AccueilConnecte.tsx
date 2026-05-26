@@ -145,36 +145,36 @@ const AccueilConnecte = () => {
         )}
       </section>
 
-      {/* ========== GRILLE / LOADING / EMPTY ========== */}      {/* ========== LISTE DES ANNONCES (pleine largeur) ========== */}
-{loading ? (
-  <div className="flex flex-col gap-4">
-    {[...Array(4)].map((_, i) => (
-      <div
-        key={i}
-        className="rounded-2xl border border-slate-200/60 bg-white/60 p-4 animate-pulse h-40 backdrop-blur-sm"
-      />
-    ))}
-  </div>
-) : filteredAnnonces.length === 0 ? (
-  <div className="text-center py-16 animate-fade-in">
-    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-      <LayoutGrid className="w-6 h-6 text-slate-400" />
-    </div>
-    <p className="text-slate-500 font-medium">Aucune annonce dans cette catégorie.</p>
-    <button
-      onClick={() => setActiveCategory('Tout')}
-      className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#007AFF] hover:underline transition-colors"
-    >
-      Voir toutes les annonces <ArrowRight className="w-3.5 h-3.5" />
-    </button>
-  </div>
-) : (
-  <div className="flex flex-col gap-4">
-    {filteredAnnonces.map((annonce) => (
-      <AnnonceCard key={annonce._id} annonce={annonce} />
-    ))}
-  </div>
-)}
+       {/* ========== GRILLE / LOADING / EMPTY ========== */}      
+        {loading ? (
+          <div className="flex flex-col gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-slate-200/60 bg-white/60 p-4 animate-pulse h-40 backdrop-blur-sm"
+              />
+            ))}
+          </div>
+        ) : filteredAnnonces.length === 0 ? (
+          <div className="text-center py-16 animate-fade-in">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+              <LayoutGrid className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-slate-500 font-medium">Aucune annonce dans cette catégorie.</p>
+            <button
+              onClick={() => setActiveCategory('Tout')}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#007AFF] hover:underline transition-colors"
+            >
+              Voir toutes les annonces <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {filteredAnnonces.map((annonce) => (
+              <AnnonceCard key={annonce._id} annonce={annonce} />
+            ))}
+          </div>
+        )}
 
       {/* Ferme le dropdown si on clique ailleurs */}
       {showMoreDropdown && (
