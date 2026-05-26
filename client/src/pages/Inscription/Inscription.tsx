@@ -20,6 +20,7 @@ const Inscription = () => {
     email: '',
     motDePasse: '',
     telephone: '',
+    ville: ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState('');
