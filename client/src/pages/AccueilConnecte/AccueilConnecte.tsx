@@ -4,6 +4,7 @@ import { Eye, Clock, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx;
 import API from '../../api/axios';
 
+
 interface Annonce {
   _id: string;
   titre: string;
