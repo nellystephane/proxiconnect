@@ -9,7 +9,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Accès refusé. Token manquant.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_provisoire');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'proxiconnect_secret_2026');
     const user = await User.findById(decoded.id);
 
     if (!user) {
