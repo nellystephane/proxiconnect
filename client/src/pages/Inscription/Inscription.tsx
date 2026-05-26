@@ -40,7 +40,7 @@ const Inscription = () => {
       newErrors.motDePasse = '6 caractères minimum';
     }
     if (form.telephone.trim() && !/^\+229\s?\d{10}$/.test(form.telephone.trim())) {
-      newErrors.telephone = 'Format: +229 01XXXXXXXX';
+      newErrors.telephone = 'Format: +229 01XXXXXXXX (10 chiffres)';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -68,7 +68,11 @@ const Inscription = () => {
       const message = err.response?.data?.message || '';
       if (message.toLowerCase().includes('existe déjà') || message.toLowerCase().includes('already exists')) {
         setServerError('Cet utilisateur existe déjà.');
-      } else if (err.message === 'Network Error') {
+      } else if (message.toLowerCase().includes('email')) {
+        setServerError("Cet email n'est pas valide ou est déjà utilisé.");
+      } else if (message.toLowerCase().includes('mot de passe')) {
+        setServerError('Le mot de passe ne respecte pas les critères.');
+      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
         setServerError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       } else {
         setServerError(message || "Une erreur inattendue s'est produite.");
