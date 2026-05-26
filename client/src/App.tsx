@@ -8,13 +8,6 @@ import Inscription from './pages/Inscription/Inscription.tsx';
 import AccueilConnecte from './pages/AccueilConnecte/AccueilConnecte.tsx';
 import Deposer from './pages/Deposer/Deposer.tsx';
 
-// dans les routes :
-<Route path="/deposer" element={
-  <ProtectedRoute>
-    <Deposer />
-  </ProtectedRoute>
-} />
-
 
 
 
