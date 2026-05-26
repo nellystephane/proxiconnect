@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Sparkles, ImagePlus, MapPin } from 'lucide-react';
+import { X, Plus, Minus, Sparkles, MapPin } from 'lucide-react';
 import API from '../../api/axios';
 
 const CATEGORIES = [
@@ -10,7 +10,11 @@ const CATEGORIES = [
   'Transport', 'Autre'
 ];
 
-const Deposer = () => {
+interface DeposerProps {
+  onClose?: () => void; // rend le composant utilisable comme pop‑up (si fourni) ou comme page (si absent)
+}
+
+const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     titre: '',
@@ -29,6 +33,14 @@ const Deposer = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      navigate(-1); // comportement normal pour la route /deposer
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -57,7 +69,6 @@ const Deposer = () => {
     e.preventDefault();
     setError('');
 
-    // Validation simple
     if (!form.titre || !form.description || !form.categorie || !form.ville) {
       setError('Titre, description, catégorie et ville sont obligatoires.');
       return;
@@ -86,9 +97,9 @@ const Deposer = () => {
     setLoading(true);
     try {
       await API.post('/annonces', payload);
-      navigate('/mes-annonces', { replace: true }); // redirige vers la liste des annonces (à créer)
+      handleClose(); // ferme le pop‑up ou redirige
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la création de l\'annonce.');
+      setError(err.response?.data?.message || "Erreur lors de la création de l'annonce.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +107,7 @@ const Deposer = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-         onClick={() => navigate(-1)}>
+         onClick={handleClose}>
       <div
         className="relative w-full max-w-2xl bg-white/80 backdrop-blur-xl border border-white/40 rounded-t-3xl shadow-2xl overflow-y-auto animate-slide-up"
         style={{ height: '97vh' }}
@@ -104,7 +115,7 @@ const Deposer = () => {
       >
         {/* Bouton fermer */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleClose}
           className="absolute top-4 right-4 z-10 p-2 bg-white/60 backdrop-blur-md rounded-full hover:bg-white transition"
         >
           <X className="w-5 h-5 text-gray-600" />
