@@ -17,7 +17,7 @@ interface Annonce {
   createdAt: string;
 }
 
-// Couleurs des catégories pour l'ombre et l'indicateur visuel
+// Couleurs des catégories (plus intenses pour l'ombre)
 const getCategorieColor = (categorie: string): string => {
   const colors: Record<string, string> = {
     'Électricité': '#f59e0b',
@@ -45,7 +45,6 @@ const AnnonceCard = ({ annonce }: { annonce: Annonce }) => {
 
   useEffect(() => { if (showPopup) setCurrentPhotoIndex(0); }, [showPopup]);
 
-  // Touche Echap pour fermer
   useEffect(() => {
     if (!showPopup) return;
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowPopup(false); };
@@ -78,7 +77,7 @@ const AnnonceCard = ({ annonce }: { annonce: Annonce }) => {
         onClick={() => setShowPopup(true)}
         className="group relative w-full bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg active:scale-[0.99]"
         style={{
-          boxShadow: `0 8px 24px -8px ${categoryColor}40, 0 2px 4px rgba(0,0,0,0.04)`,
+          boxShadow: `0 12px 30px -8px ${categoryColor}60, 0 4px 6px rgba(0,0,0,0.05)`,
         }}
         role="button"
         tabIndex={0}
@@ -155,33 +154,57 @@ const AnnonceCard = ({ annonce }: { annonce: Annonce }) => {
         </div>
       </article>
 
-      {/* ========== MODAL (inchangé) ========== */}
+      {/* ========== POPUP AMÉLIORÉ ========== */}
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setShowPopup(false)}>
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-4 bg-white border-b border-slate-100">
+        <div
+          className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={() => setShowPopup(false)}
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
+            onClick={e => e.stopPropagation()}
+            style={{ overscrollBehavior: 'contain' }}
+          >
+            {/* Bouton fermer */}
+            <button
+              onClick={() => setShowPopup(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition shadow-sm"
+            >
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+
+            {/* En-tête */}
+            <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-md border-b border-white/30 px-6 py-4 rounded-t-3xl">
               <h2 className="text-lg font-semibold text-slate-900 pr-8">{annonce.titre}</h2>
-              <button onClick={() => setShowPopup(false)} className="absolute right-4 top-4 p-2 rounded-lg hover:bg-slate-100">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
             </div>
 
-            <div className="px-5 pb-6 pt-4 space-y-5">
+            {/* Contenu */}
+            <div className="px-6 pb-6 pt-4 space-y-5">
               {/* Photos */}
               {hasPhotos && (
                 <div className="relative rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                   <div className="relative aspect-video">
-                    <img src={annonce.photos[currentPhotoIndex]} alt={`${annonce.titre} - ${currentPhotoIndex+1}`} className="w-full h-full object-cover" />
+                    <img
+                      src={annonce.photos[currentPhotoIndex]}
+                      alt={`${annonce.titre} - ${currentPhotoIndex + 1}`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {annonce.photos.length > 1 && (
                     <>
-                      <button onClick={prevPhoto} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white"><ChevronLeft className="w-5 h-5" /></button>
-                      <button onClick={nextPhoto} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white"><ChevronRight className="w-5 h-5" /></button>
+                      <button onClick={prevPhoto} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm">
+                        <ChevronLeft className="w-5 h-5 text-slate-700" />
+                      </button>
+                      <button onClick={nextPhoto} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm">
+                        <ChevronRight className="w-5 h-5 text-slate-700" />
+                      </button>
                       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                         {annonce.photos.map((_, i) => (
-                          <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i); }}
-                            className={`w-2 h-2 rounded-full ${i === currentPhotoIndex ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                          <button
+                            key={i}
+                            onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i); }}
+                            className={`w-2 h-2 rounded-full transition-all ${i === currentPhotoIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
+                          />
                         ))}
                       </div>
                     </>
@@ -190,34 +213,44 @@ const AnnonceCard = ({ annonce }: { annonce: Annonce }) => {
               )}
 
               {/* Créateur */}
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50/80 border border-slate-200/60">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[#007AFF] font-bold">
                   {annonce.createur?.prenom?.charAt(0) || '?'}
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900">{annonce.createur?.prenom} {annonce.createur?.nom}</p>
                   <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />{annonce.localisation?.ville}{annonce.localisation?.quartier && ` • ${annonce.localisation.quartier}`}
+                    <MapPin className="w-3 h-3" />
+                    {annonce.localisation?.ville}{annonce.localisation?.quartier && ` • ${annonce.localisation.quartier}`}
                   </p>
                 </div>
               </div>
 
+              {/* Description */}
               <div>
                 <h3 className="text-sm font-semibold text-slate-700 mb-2">Description</h3>
                 <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{annonce.description}</p>
               </div>
 
+              {/* Détails localisation */}
               {annonce.localisation?.details && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-sm text-slate-600"><span className="font-medium text-slate-700">📍 Précisions :</span> {annonce.localisation.details}</p>
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/60">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-medium text-slate-700">📍 Précisions :</span> {annonce.localisation.details}
+                  </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+              {/* Prix + vues */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50/80 border border-slate-200/60">
                 <div>
                   <p className="text-xs text-slate-400 uppercase tracking-wide">Prix</p>
-                  <p className="text-xl font-bold text-[#007AFF]">{annonce.prix.estGratuit ? 'Gratuit' : `${annonce.prix.montant.toLocaleString('fr-FR')} XOF`}</p>
-                  {annonce.prix.estNegociable && !annonce.prix.estGratuit && <span className="text-xs text-slate-400">Négociable</span>}
+                  <p className="text-xl font-bold text-[#007AFF]">
+                    {annonce.prix.estGratuit ? 'Gratuit' : `${annonce.prix.montant.toLocaleString('fr-FR')} XOF`}
+                  </p>
+                  {annonce.prix.estNegociable && !annonce.prix.estGratuit && (
+                    <span className="text-xs text-slate-400">Négociable</span>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-400 uppercase tracking-wide">Vues</p>
@@ -225,8 +258,11 @@ const AnnonceCard = ({ annonce }: { annonce: Annonce }) => {
                 </div>
               </div>
 
-              {/* Bouton (adaptable selon contexte) */}
-              <Link to="/inscription" className="block w-full text-center bg-[#007AFF] text-white py-3.5 rounded-xl font-semibold hover:bg-blue-600">
+              {/* Action */}
+              <Link
+                to="/inscription"
+                className="block w-full text-center bg-[#007AFF] text-white py-3.5 rounded-xl font-semibold hover:bg-blue-600 transition-colors"
+              >
                 S'inscrire pour contacter
               </Link>
             </div>
