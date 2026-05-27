@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight } from 'lucide-react';
+import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import API from '../../api/axios';
 
 // ===== TYPES =====
