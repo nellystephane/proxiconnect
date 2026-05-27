@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Eye, Clock, MapPin, X, ChevronLeft, ChevronRight, Image as ImageIcon
+  Eye, Clock, MapPin, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 interface Annonce {
