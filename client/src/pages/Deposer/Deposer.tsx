@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import API from '../../api/axios';
+import API from '../../api/axios.ts';
 
 // ===== TYPES =====
 interface FormType {
