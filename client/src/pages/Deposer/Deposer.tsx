@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import API from '../../api/axios.ts';
 
 // ===== TYPES =====
@@ -24,31 +24,32 @@ interface CategoryOption {
   value: string;
   label: string;
   color: string;
+  icon?: string;
 }
 
 // ===== DONNÉES =====
 const CATEGORIES: CategoryOption[] = [
-  { value: 'Électricité', label: 'Électricité', color: '#f59e0b' },
-  { value: 'Plomberie', label: 'Plomberie', color: '#3b82f6' },
-  { value: 'Maçonnerie', label: 'Maçonnerie', color: '#f97316' },
-  { value: 'Peinture', label: 'Peinture', color: '#a855f7' },
-  { value: 'Menuiserie', label: 'Menuiserie', color: '#d97706' },
-  { value: 'Couture', label: 'Couture', color: '#ec4899' },
-  { value: 'Coiffure', label: 'Coiffure', color: '#8b5cf6' },
-  { value: 'Esthétique', label: 'Esthétique', color: '#f43f5e' },
-  { value: 'Cours particuliers', label: 'Cours particuliers', color: '#10b981' },
-  { value: 'Informatique', label: 'Informatique', color: '#06b6d4' },
-  { value: 'Agriculture', label: 'Agriculture', color: '#22c55e' },
-  { value: 'Vente de produits', label: 'Vente de produits', color: '#ef4444' },
-  { value: 'Location', label: 'Location', color: '#6366f1' },
-  { value: 'Transport', label: 'Transport', color: '#3b82f6' },
-  { value: 'Autre', label: 'Autre', color: '#64748b' },
+  { value: 'Électricité', label: 'Électricité', color: '#0EA5E9', icon: '⚡' },
+  { value: 'Plomberie', label: 'Plomberie', color: '#06B6D4', icon: '🔧' },
+  { value: 'Maçonnerie', label: 'Maçonnerie', color: '#0284C7', icon: '🧱' },
+  { value: 'Peinture', label: 'Peinture', color: '#7C3AED', icon: '🎨' },
+  { value: 'Menuiserie', label: 'Menuiserie', color: '#D97706', icon: '🪵' },
+  { value: 'Couture', label: 'Couture', color: '#EC4899', icon: '🧵' },
+  { value: 'Coiffure', label: 'Coiffure', color: '#A855F7', icon: '✂️' },
+  { value: 'Esthétique', label: 'Esthétique', color: '#F43F5E', icon: '💅' },
+  { value: 'Cours particuliers', label: 'Cours particuliers', color: '#10B981', icon: '📚' },
+  { value: 'Informatique', label: 'Informatique', color: '#06B6D4', icon: '💻' },
+  { value: 'Agriculture', label: 'Agriculture', color: '#22C55E', icon: '🌾' },
+  { value: 'Vente de produits', label: 'Vente de produits', color: '#EF4444', icon: '🛍️' },
+  { value: 'Location', label: 'Location', color: '#6366F1', icon: '🏠' },
+  { value: 'Transport', label: 'Transport', color: '#3B82F6', icon: '🚗' },
+  { value: 'Autre', label: 'Autre', color: '#64748B', icon: '⭐' },
 ];
 
 const TYPES = [
-  { value: 'service', label: 'Service', color: '#3b82f6' },
-  { value: 'vente', label: 'Vente', color: '#10b981' },
-  { value: 'autre', label: 'Autre', color: '#64748b' },
+  { value: 'service', label: 'Service', color: '#3B82F6', icon: '🔧' },
+  { value: 'vente', label: 'Vente', color: '#10B981', icon: '📦' },
+  { value: 'autre', label: 'Autre', color: '#64748B', icon: '❓' },
 ];
 
 interface DeposerProps {
@@ -77,13 +78,26 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // décoratif
+  const [step, setStep] = useState(1);
+  const [completionPercent, setCompletionPercent] = useState(0);
 
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
   const [openType, setOpenType] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
+
+  // Calculate completion percentage
+  useEffect(() => {
+    const filledFields = [
+      form.titre,
+      form.description,
+      form.categorie,
+      form.ville,
+      form.photos.some(p => p.trim())
+    ].filter(Boolean).length;
+    setCompletionPercent((filledFields / 5) * 100);
+  }, [form]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -202,7 +216,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   }: {
     label: string;
     value: string;
-    options: CategoryOption[] | { value: string; label: string; color: string }[];
+    options: CategoryOption[] | { value: string; label: string; color: string; icon?: string }[];
     onSelect: (value: string) => void;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
@@ -212,37 +226,45 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     const selected = options.find(opt => opt.value === value);
 
     return (
-      <div className="space-y-2 relative" ref={refContainer}>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
+      <div className="space-y-2.5 relative" ref={refContainer}>
+        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+          {label}
+        </label>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
+          className={`w-full flex items-center justify-between px-4 py-3.5 rounded-lg border-2 transition-all duration-300 text-left group ${
             isOpen
-              ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
-              : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
+              ? 'border-blue-400 bg-blue-50/50 shadow-lg shadow-blue-100/40'
+              : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md hover:shadow-blue-50/30'
           }`}
         >
           <span className="flex items-center gap-3">
             {selected && (
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: (selected as CategoryOption).color }}
-              />
+              <span className="text-lg">
+                {(selected as CategoryOption).icon || '•'}
+              </span>
             )}
-            <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+            <span className={`transition-colors duration-300 ${
+              value ? 'text-slate-900 font-semibold' : 'text-slate-400 font-medium'
+            }`}>
               {selected ? selected.label : placeholder}
             </span>
           </span>
-          <span className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
+          <svg 
+            className={`w-5 h-5 text-slate-400 transition-transform duration-300 group-hover:text-blue-400 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+          <div className="absolute z-50 w-full mt-2 rounded-lg border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in fade-in duration-200">
             <div className="max-h-56 overflow-y-auto py-1">
               {options.map((opt) => {
                 const isSelected = opt.value === value;
@@ -251,18 +273,19 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     key={opt.value}
                     type="button"
                     onClick={() => onSelect(opt.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 ${
                       isSelected
-                        ? 'bg-blue-50 text-[#007AFF]'
+                        ? 'bg-blue-100 text-blue-900 font-semibold'
                         : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <span
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: opt.color }}
-                    />
+                    <span className="text-xl">
+                      {(opt as CategoryOption).icon || '•'}
+                    </span>
                     <span className="flex-1 text-sm font-medium">{opt.label}</span>
-                    {isSelected && <Check className="w-4 h-4 text-[#007AFF] flex-shrink-0" />}
+                    {isSelected && (
+                      <Check className="w-5 h-5 text-blue-600 flex-shrink-0 animate-bounce" />
+                    )}
                   </button>
                 );
               })}
@@ -284,16 +307,16 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     label: string;
     disabled?: boolean;
   }) => (
-    <label className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+    <label className={`flex items-center justify-between px-4 py-3 rounded-lg border-2 transition-all duration-300 cursor-pointer group ${
       disabled
         ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
         : checked
-          ? 'border-emerald-200 bg-emerald-50'
-          : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
+          ? 'border-blue-300 bg-blue-50'
+          : 'border-slate-200 bg-white hover:border-blue-200'
     }`}>
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-        checked ? 'bg-[#007AFF]' : 'bg-slate-200'
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <div className={`relative w-12 h-6.5 rounded-full transition-all duration-300 ${
+        checked ? 'bg-blue-500 shadow-lg shadow-blue-200' : 'bg-slate-200'
       } ${disabled ? 'opacity-50' : ''}`}>
         <input
           type="checkbox"
@@ -302,101 +325,122 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           disabled={disabled}
           className="sr-only"
         />
-        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
-          checked ? 'left-5' : 'left-0.5'
+        <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
+          checked ? 'translate-x-6' : 'translate-x-0.5'
         }`} />
       </div>
     </label>
   );
 
+  const SectionHeader = ({ icon: Icon, title, step }: { icon: React.ReactNode; title: string; step: number }) => (
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 text-blue-600">
+        {Icon}
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Étape {step}</div>
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+      </div>
+    </div>
+  );
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md"
       onClick={handleClose}
     >
-      {/* Modal Glassmorphism */}
+      {/* Modal avec gradient subtil */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
+        className="relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 duration-500"
         onClick={(e) => e.stopPropagation()}
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ 
+          overscrollBehavior: 'contain',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)'
+        }}
       >
-        {/* Croix fixe */}
+        {/* Close Button */}
         <button
           onClick={handleClose}
-          className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm hover:bg-white transition-colors"
+          className="fixed top-4 right-4 z-50 h-10 w-10 rounded-full bg-white/95 shadow-lg hover:shadow-2xl hover:bg-blue-50 transition-all duration-300 flex items-center justify-center group"
           aria-label="Fermer"
         >
-          <X className="w-5 h-5 text-slate-700" />
+          <X className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
         </button>
 
-        {/* Barre d'étapes décorative */}
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-3 flex items-center gap-4">
-          {['Infos', 'Photos', 'Localisation'].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                step === i + 1
-                  ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
-                  : 'bg-slate-100 text-slate-400'
-              }`}>
-                {i + 1}
-              </div>
-              <span className={`text-xs font-medium ${step === i + 1 ? 'text-[#007AFF]' : 'text-slate-400'}`}>
-                {label}
-              </span>
-              {i < 2 && <ChevronRight className="w-4 h-4 text-slate-300" />}
-            </div>
-          ))}
+        {/* Progress Bar */}
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">Création d'annonce</h2>
+            <span className="text-xs font-semibold text-blue-600">{Math.round(completionPercent)}%</span>
+          </div>
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500 rounded-full shadow-lg shadow-blue-300/50"
+              style={{ width: `${completionPercent}%` }}
+            />
+          </div>
         </div>
 
         {/* Contenu */}
-        <div className="px-6 pb-6 pt-4 space-y-6">
+        <div className="px-6 pb-8 pt-6 space-y-8">
           {error && (
-            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
+            <div className="p-4 rounded-lg border-2 border-red-200 bg-red-50/80 text-sm text-red-700 flex items-center gap-3 animate-in fade-in duration-300">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1 : Infos générales */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-[#007AFF]" />
-                <h3 className="text-base font-semibold text-slate-800">Informations générales</h3>
-              </div>
+            <div className="space-y-5">
+              <SectionHeader icon={<Sparkles className="w-5 h-5" />} title="Détails de l'annonce" step={1} />
 
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
+              {/* Titre */}
+              <div className="space-y-2.5">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Titre <span className="text-red-500">*</span>
+                </label>
                 <input
                   name="titre"
                   value={form.titre}
                   onChange={handleChange}
-                  placeholder="Ex: Électricien pro disponible pour dépannage"
-                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                  placeholder="Électricien expérimenté - Dépannage rapide et fiable"
+                  className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                   required
                   maxLength={100}
                 />
-                <div className="text-right text-[10px] text-slate-400">{form.titre.length}/100</div>
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-slate-500">Soyez précis et attractif</p>
+                  <span className="text-xs font-semibold text-slate-400">{form.titre.length}/100</span>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description *</label>
+              {/* Description */}
+              <div className="space-y-2.5">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="description"
                   value={form.description}
                   onChange={handleChange}
-                  rows={4}
-                  placeholder="Décrivez votre service, tarifs, disponibilités..."
-                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                  rows={5}
+                  placeholder="Décrivez en détail votre service, votre expérience, vos horaires, tarifs spéciaux..."
+                  className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300 resize-none"
                   required
                   maxLength={500}
                 />
-                <div className="text-right text-[10px] text-slate-400">{form.description.length}/500</div>
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-slate-500">Plus de détails = plus de clients</p>
+                  <span className="text-xs font-semibold text-slate-400">{form.description.length}/500</span>
+                </div>
               </div>
 
+              {/* Catégorie & Type */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <CustomSelect
-                  label="Catégorie *"
+                  label="Catégorie"
                   value={form.categorie}
                   options={CATEGORIES}
                   onSelect={(v) => handleSelect('categorie', v)}
@@ -417,24 +461,28 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 />
               </div>
 
+              {/* Sous-catégorie */}
               {form.categorie && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Sous-catégorie <span className="text-slate-300">(optionnel)</span>
+                <div className="space-y-2.5 animate-in fade-in duration-300">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Précision <span className="text-slate-400">(optionnel)</span>
                   </label>
                   <input
                     name="sousCategorie"
                     value={form.sousCategorie}
                     onChange={handleChange}
                     placeholder={`Ex: pour "${form.categorie}"...`}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                   />
                 </div>
               )}
 
-              <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
-                <div className="flex flex-wrap gap-3">
+              {/* Tarification */}
+              <div className="space-y-4 p-5 rounded-lg border-2 border-slate-200 bg-gradient-to-br from-blue-50 to-cyan-50/30">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Tarification
+                </label>
+                <div className="space-y-3">
                   <ToggleSwitch
                     checked={form.estGratuit}
                     onChange={(checked) => {
@@ -444,57 +492,41 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                         estNegociable: checked ? false : prev.estNegociable
                       }));
                     }}
-                    label="Gratuit"
+                    label="Service gratuit"
                   />
                   <ToggleSwitch
                     checked={form.estNegociable}
                     onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
-                    label="Négociable"
+                    label="Prix négociable"
                     disabled={form.estGratuit}
                   />
                 </div>
                 {!form.estGratuit && (
-                  <div className="relative">
+                  <div className="relative mt-4 pt-4 border-t border-slate-200">
                     <input
                       type="number"
                       name="montant"
                       value={form.montant}
                       onChange={handleChange}
                       placeholder="0"
-                      className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
+                      className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-right text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300 font-bold text-lg"
                       min="0"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-semibold">XOF</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Section 2 : Photos */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ImageIcon className="w-4 h-4 text-[#007AFF]" />
-                <h3 className="text-base font-semibold text-slate-800">Photos</h3>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Photos <span className="text-slate-300">({form.photos.filter(p => p.trim()).length}/6)</span>
-                </label>
-                {form.photos.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={addPhotoField}
-                    className="text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors"
-                  >
-                    + Ajouter
-                  </button>
-                )}
-              </div>
+            <div className="space-y-5">
+              <SectionHeader icon={<ImageIcon className="w-5 h-5" />} title="Galerie photos" step={2} />
+              <p className="text-sm text-slate-600">Les photos augmentent vos chances de réussite de 80%</p>
 
               <div className="space-y-3">
                 {form.photos.map((photo, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 bg-white/70 backdrop-blur-sm">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                  <div key={i} className="group flex items-center gap-3 p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-blue-200 hover:shadow-md transition-all duration-300">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center border-2 border-slate-200 flex-shrink-0">
                       {photo.trim() ? (
                         <img
                           src={photo}
@@ -505,129 +537,188 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                           }}
                         />
                       ) : (
-                        <MapPin className="w-5 h-5 text-slate-300" />
+                        <ImageIcon className="w-6 h-6 text-slate-300" />
                       )}
                     </div>
                     <input
+                      type="text"
                       value={photo}
                       onChange={(e) => handlePhotoChange(i, e.target.value)}
-                      placeholder="https://..."
-                      className="flex-1 px-3 py-2 bg-white/80 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                      placeholder="Collez l'URL de votre photo"
+                      className="flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                     />
                     {form.photos.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removePhotoField(i)}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
                         aria-label="Supprimer"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-5 h-5" />
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400">
-                Utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
-              </p>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-blue-600">{form.photos.filter(p => p.trim()).length}</span>/6 photos
+                </span>
+                {form.photos.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={addPhotoField}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Ajouter une photo
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Section 3 : Localisation */}
-            <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <MapPin className="w-4 h-4 text-[#007AFF]" />
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Localisation</label>
-              </div>
+            <div className="space-y-5">
+              <SectionHeader icon={<MapPin className="w-5 h-5" />} title="Localisation" step={3} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Pays</label>
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Pays <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    name="pays"
+                    type="text"
                     value={form.pays}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Bénin"
+                    disabled
+                    className="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-lg text-sm text-slate-600 font-semibold opacity-75 cursor-not-allowed"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Ville *</label>
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Ville <span className="text-red-500">*</span>
+                  </label>
                   <input
+                    type="text"
                     name="ville"
                     value={form.ville}
                     onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Cotonou"
+                    placeholder="Cotonou, Porto-Novo..."
+                    className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Quartier</label>
-                  <input
-                    name="quartier"
-                    value={form.quartier}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Akpakpa"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Points de repère</label>
-                  <input
-                    name="details"
-                    value={form.details}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="À côté de la pharmacie..."
-                  />
-                </div>
+              <div className="space-y-2.5">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Quartier <span className="text-slate-400">(optionnel)</span>
+                </label>
+                <input
+                  type="text"
+                  name="quartier"
+                  value={form.quartier}
+                  onChange={handleChange}
+                  placeholder="Fidjrossè, Menontin..."
+                  className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                />
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Détails <span className="text-slate-400">(optionnel)</span>
+                </label>
+                <textarea
+                  name="details"
+                  value={form.details}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Détails supplémentaires sur la localisation..."
+                  className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-300 resize-none"
+                />
               </div>
             </div>
 
-            {/* Bouton de soumission */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
-            >
-              <span className="relative z-10 flex items-center gap-2">
+            {/* Bouton Submit */}
+            <div className="flex gap-3 pt-6">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 px-6 py-3.5 rounded-lg border-2 border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all duration-300"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-6 py-3.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-semibold hover:shadow-lg hover:shadow-blue-300/50 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
                 {loading ? (
-                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Création...
+                  </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Check className="w-5 h-5" />
                     Publier l'annonce
                   </>
                 )}
-              </span>
-              <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </button>
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
-      {/* ===== GLOBAL STYLES ===== */}
       <style>{`
-        .glass {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        @media (prefers-reduced-motion: no-preference) {
-          .animate-slide-up {
-            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        @keyframes slide-in-from-bottom {
+          from {
+            opacity: 0;
+            transform: translateY(100%);
           }
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
-        .overflow-y-auto {
-          -webkit-overflow-scrolling: touch;
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animate-in {
+          animation: slide-in-from-bottom 0.5s ease-out;
+        }
+
+        .animate-in.fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        .animate-bounce {
+          animation: bounce 0.6s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        input[type=number] {
+          -moz-appearance: textfield;
         }
       `}</style>
     </div>
