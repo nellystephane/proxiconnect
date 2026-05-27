@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Sparkles, MapPin, Check } from 'lucide-react';
-import API from '../../api/axios.ts';
+import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight } from 'lucide-react';
+import API from '../../api/axios';
 
 // ===== TYPES =====
 interface FormType {
@@ -77,6 +77,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // décoratif
 
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
@@ -84,7 +85,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const categoryRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
@@ -98,7 +98,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close modal with Escape + prevent body scroll
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
@@ -221,7 +220,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
             isOpen
               ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+              : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
           }`}
         >
           <span className="flex items-center gap-3">
@@ -242,7 +241,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           </span>
         </button>
 
-        {/* Dropdown */}
         {isOpen && (
           <div className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
             <div className="max-h-56 overflow-y-auto py-1">
@@ -291,7 +289,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
         : checked
           ? 'border-emerald-200 bg-emerald-50'
-          : 'border-slate-200 bg-white hover:border-slate-300'
+          : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
     }`}>
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
@@ -313,39 +311,46 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30"
+      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
       onClick={handleClose}
     >
-      {/* Modal Card - slides up from bottom on mobile, centered on desktop */}
+      {/* Modal Glassmorphism */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl max-h-[97vh] md:max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
+        className="relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
         style={{ overscrollBehavior: 'contain' }}
       >
-        {/* Header avec close */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 rounded-t-3xl">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#007AFF]">
-              <Sparkles className="w-4 h-4 text-white" />
+        {/* Croix fixe */}
+        <button
+          onClick={handleClose}
+          className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm hover:bg-white transition-colors"
+          aria-label="Fermer"
+        >
+          <X className="w-5 h-5 text-slate-700" />
+        </button>
+
+        {/* Barre d'étapes décorative */}
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-3 flex items-center gap-4">
+          {['Infos', 'Photos', 'Localisation'].map((label, i) => (
+            <div key={label} className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                step === i + 1
+                  ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
+                  : 'bg-slate-100 text-slate-400'
+              }`}>
+                {i + 1}
+              </div>
+              <span className={`text-xs font-medium ${step === i + 1 ? 'text-[#007AFF]' : 'text-slate-400'}`}>
+                {label}
+              </span>
+              {i < 2 && <ChevronRight className="w-4 h-4 text-slate-300" />}
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">Nouvelle annonce</h2>
-              <p className="text-xs text-slate-400">Publiez en moins de 2 minutes</p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-            aria-label="Fermer"
-          >
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
+          ))}
         </div>
 
-        {/* Scrollable content */}
+        {/* Contenu */}
         <div className="px-6 pb-6 pt-4 space-y-6">
-          {/* Error message */}
           {error && (
             <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
               {error}
@@ -353,117 +358,124 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Titre */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
-              <input
-                name="titre"
-                value={form.titre}
-                onChange={handleChange}
-                placeholder="Ex: Électricien pro disponible pour dépannage"
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                required
-                maxLength={100}
-              />
-              <div className="text-right text-[10px] text-slate-400">{form.titre.length}/100</div>
-            </div>
+            {/* Section 1 : Infos générales */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-[#007AFF]" />
+                <h3 className="text-base font-semibold text-slate-800">Informations générales</h3>
+              </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description *</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                rows={4}
-                placeholder="Décrivez votre service, tarifs, disponibilités..."
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all resize-none"
-                required
-                maxLength={500}
-              />
-              <div className="text-right text-[10px] text-slate-400">{form.description.length}/500</div>
-            </div>
-
-            {/* Catégorie + Type */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CustomSelect
-                label="Catégorie *"
-                value={form.categorie}
-                options={CATEGORIES}
-                onSelect={(v) => handleSelect('categorie', v)}
-                isOpen={openCategory}
-                setIsOpen={setOpenCategory}
-                refContainer={categoryRef}
-                placeholder="Choisir une catégorie"
-              />
-              <CustomSelect
-                label="Type"
-                value={form.type}
-                options={TYPES}
-                onSelect={(v) => handleSelect('type', v)}
-                isOpen={openType}
-                setIsOpen={setOpenType}
-                refContainer={typeRef}
-                placeholder="Type d'annonce"
-              />
-            </div>
-
-            {/* Sous-catégorie (conditionnelle) */}
-            {form.categorie && (
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Sous-catégorie <span className="text-slate-300">(optionnel)</span>
-                </label>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
                 <input
-                  name="sousCategorie"
-                  value={form.sousCategorie}
+                  name="titre"
+                  value={form.titre}
                   onChange={handleChange}
-                  placeholder={`Ex: pour "${form.categorie}"...`}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                  placeholder="Ex: Électricien pro disponible pour dépannage"
+                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                  required
+                  maxLength={100}
                 />
+                <div className="text-right text-[10px] text-slate-400">{form.titre.length}/100</div>
               </div>
-            )}
 
-            {/* Prix */}
-            <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
-              <div className="flex flex-wrap gap-3">
-                <ToggleSwitch
-                  checked={form.estGratuit}
-                  onChange={(checked) => {
-                    setForm(prev => ({
-                      ...prev,
-                      estGratuit: checked,
-                      estNegociable: checked ? false : prev.estNegociable
-                    }));
-                  }}
-                  label="Gratuit"
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description *</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Décrivez votre service, tarifs, disponibilités..."
+                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                  required
+                  maxLength={500}
                 />
-                <ToggleSwitch
-                  checked={form.estNegociable}
-                  onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
-                  label="Négociable"
-                  disabled={form.estGratuit}
+                <div className="text-right text-[10px] text-slate-400">{form.description.length}/500</div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomSelect
+                  label="Catégorie *"
+                  value={form.categorie}
+                  options={CATEGORIES}
+                  onSelect={(v) => handleSelect('categorie', v)}
+                  isOpen={openCategory}
+                  setIsOpen={setOpenCategory}
+                  refContainer={categoryRef}
+                  placeholder="Choisir une catégorie"
+                />
+                <CustomSelect
+                  label="Type"
+                  value={form.type}
+                  options={TYPES}
+                  onSelect={(v) => handleSelect('type', v)}
+                  isOpen={openType}
+                  setIsOpen={setOpenType}
+                  refContainer={typeRef}
+                  placeholder="Type d'annonce"
                 />
               </div>
-              {!form.estGratuit && (
-                <div className="relative">
+
+              {form.categorie && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Sous-catégorie <span className="text-slate-300">(optionnel)</span>
+                  </label>
                   <input
-                    type="number"
-                    name="montant"
-                    value={form.montant}
+                    name="sousCategorie"
+                    value={form.sousCategorie}
                     onChange={handleChange}
-                    placeholder="0"
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
-                    min="0"
+                    placeholder={`Ex: pour "${form.categorie}"...`}
+                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
                 </div>
               )}
+
+              <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
+                <div className="flex flex-wrap gap-3">
+                  <ToggleSwitch
+                    checked={form.estGratuit}
+                    onChange={(checked) => {
+                      setForm(prev => ({
+                        ...prev,
+                        estGratuit: checked,
+                        estNegociable: checked ? false : prev.estNegociable
+                      }));
+                    }}
+                    label="Gratuit"
+                  />
+                  <ToggleSwitch
+                    checked={form.estNegociable}
+                    onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
+                    label="Négociable"
+                    disabled={form.estGratuit}
+                  />
+                </div>
+                {!form.estGratuit && (
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="montant"
+                      value={form.montant}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
+                      min="0"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Photos */}
+            {/* Section 2 : Photos */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ImageIcon className="w-4 h-4 text-[#007AFF]" />
+                <h3 className="text-base font-semibold text-slate-800">Photos</h3>
+              </div>
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Photos <span className="text-slate-300">({form.photos.filter(p => p.trim()).length}/6)</span>
@@ -481,7 +493,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
               <div className="space-y-3">
                 {form.photos.map((photo, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 bg-white/70 backdrop-blur-sm">
                     <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
                       {photo.trim() ? (
                         <img
@@ -500,7 +512,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                       value={photo}
                       onChange={(e) => handlePhotoChange(i, e.target.value)}
                       placeholder="https://..."
-                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="flex-1 px-3 py-2 bg-white/80 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                     {form.photos.length > 1 && (
                       <button
@@ -515,14 +527,13 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                   </div>
                 ))}
               </div>
-
               <p className="text-[10px] text-slate-400">
                 Utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
               </p>
             </div>
 
-            {/* Localisation */}
-            <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+            {/* Section 3 : Localisation */}
+            <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-1">
                 <MapPin className="w-4 h-4 text-[#007AFF]" />
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Localisation</label>
@@ -535,7 +546,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     name="pays"
                     value={form.pays}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Bénin"
                   />
                 </div>
@@ -546,7 +557,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     value={form.ville}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Cotonou"
                   />
                 </div>
@@ -559,7 +570,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     name="quartier"
                     value={form.quartier}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="Akpakpa"
                   />
                 </div>
@@ -569,45 +580,52 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     name="details"
                     value={form.details}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="À côté de la pharmacie..."
                   />
                 </div>
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Bouton de soumission */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
             >
-              {loading ? (
-                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Publier
-                </>
-              )}
+              <span className="relative z-10 flex items-center gap-2">
+                {loading ? (
+                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Publier l'annonce
+                  </>
+                )}
+              </span>
+              <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
           </form>
         </div>
       </div>
 
-      {/* ===== GLOBAL STYLE ===== */}
+      {/* ===== GLOBAL STYLES ===== */}
       <style>{`
+        .glass {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+        }
         @media (prefers-reduced-motion: no-preference) {
           .animate-slide-up {
             animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
           }
           @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
           }
         }
-        /* Ensure modal content is scrollable */
         .overflow-y-auto {
           -webkit-overflow-scrolling: touch;
         }
