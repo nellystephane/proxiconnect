@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
-
+const uploadRoutes = require('./routes/uploadRoutes');
 const connectDB = require('./config/db');
 
 
