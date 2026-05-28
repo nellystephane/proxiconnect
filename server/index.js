@@ -25,6 +25,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/annonces', annonceRoutes);
 app.use('/api/avis', avisRoutes);
 app.use('/api/paiements', paiementRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ─── Route d'accueil ───
 app.get('/api', (req, res) => {
