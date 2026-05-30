@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import ImageUploader from '../../components/ImageUploader';
 import API from '../../api/axios';
-import ImageUploader from '../../components/ImageUploader.tsx';
 
 // ===== TYPES =====
 interface FormType {
@@ -78,7 +78,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // décoratif
 
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
@@ -133,6 +132,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     if (error) setError('');
   };
 
+  // Met à jour l'URL d'une photo (appelée par ImageUploader)
   const handlePhotoChange = (index: number, value: string) => {
     const newPhotos = [...form.photos];
     newPhotos[index] = value;
@@ -189,7 +189,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     }
   };
 
-  // ===== COMPONENTS =====
+  // ===== COMPOSANTS INTERNES =====
 
   const CustomSelect = ({
     label,
@@ -336,13 +336,11 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           {['Infos', 'Photos', 'Localisation'].map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                step === i + 1
-                  ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
-                  : 'bg-slate-100 text-slate-400'
+                i === 0 ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'
               }`}>
                 {i + 1}
               </div>
-              <span className={`text-xs font-medium ${step === i + 1 ? 'text-[#007AFF]' : 'text-slate-400'}`}>
+              <span className={`text-xs font-medium ${i === 0 ? 'text-[#007AFF]' : 'text-slate-400'}`}>
                 {label}
               </span>
               {i < 2 && <ChevronRight className="w-4 h-4 text-slate-300" />}
@@ -471,7 +469,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* Section 2 : Photos */}
+            {/* Section 2 : Photos (utilise ImageUploader) */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <ImageIcon className="w-4 h-4 text-[#007AFF]" />
@@ -495,25 +493,9 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
               <div className="space-y-3">
                 {form.photos.map((photo, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 bg-white/70 backdrop-blur-sm">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
-                      {photo.trim() ? (
-                        <img
-                          src={photo}
-                          alt={`Preview ${i + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <MapPin className="w-5 h-5 text-slate-300" />
-                      )}
-                    </div>
-                    <input
-                      value={photo}
-                      onChange={(e) => handlePhotoChange(i, e.target.value)}
-                      placeholder="https://..."
-                      className="flex-1 px-3 py-2 bg-white/80 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    <ImageUploader
+                      currentImage={photo}
+                      onUpload={(url) => handlePhotoChange(i, url)}
                     />
                     {form.photos.length > 1 && (
                       <button
@@ -529,7 +511,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 ))}
               </div>
               <p className="text-[10px] text-slate-400">
-                Utilisez des URLs d'images. L'upload direct sera ajouté prochainement.
+                Utilisez le bouton pour prendre une photo ou en choisir une depuis votre galerie.
               </p>
             </div>
 
