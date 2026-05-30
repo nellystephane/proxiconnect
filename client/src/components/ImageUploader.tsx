@@ -31,12 +31,15 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Upload failed');
       onUpload('https://proxiconnect.onrender.com' + data.url);
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      alert('Erreur lors de l\'upload de la photo.');
-    } finally {
-      setUploading(false);
-    }
+    }  catch (err: any) {
+        console.error('Upload error:', err);
+        let message = 'Erreur inconnue';
+        if (err.message) message = err.message;
+        if (err.response) {
+          message = `Erreur ${err.response.status}: ${err.response.data?.message || 'inconnue'}`;
+        }
+        alert(`Erreur lors de l'upload : ${message}`);
+      }
   };
 
   const triggerFileInput = () => {
