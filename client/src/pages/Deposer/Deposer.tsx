@@ -142,24 +142,23 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   }, [form.estGratuit]);
 
   const validateStep = useCallback((stepIndex: number): boolean => {
-    const newErrors: FormErrors = {};
-    let isValid = true;
+  const newErrors: FormErrors = {}; // maintenant parfaitement typé
+  let isValid = true;
 
-    if (stepIndex === 0) {
-      const fields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
-    
-      fields.forEach(field => {
-        const error = validateField(field, form[field]);
-    
-        if (error) {
-          newErrors[field] = error;
-          isValid = false;
-        }
-      });
-    }
-    setErrors(prev => ({ ...prev, ...newErrors }));
-    return isValid;
-  }, [form, validateField]);
+  if (stepIndex === 0) {
+    const fields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
+  
+    fields.forEach(field => {
+      const error = validateField(field, form[field]);
+      if (error) {
+        newErrors[field] = error; // plus d'erreur TS7053
+        isValid = false;
+      }
+    });
+  }
+  setErrors(prev => ({ ...prev, ...newErrors }));
+  return isValid;
+}, [form, validateField]);
 
 
   // ===== EFFETS =====
