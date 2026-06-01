@@ -246,19 +246,19 @@ useEffect(() => {
   };
 
   // ===== HANDLERS OPTIMISÉS =====
-const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  const { name, value, type } = e.target;
-  const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-  
-  setForm(prev => ({ ...prev, [name]: val }));
-  
-  // Ne pas marquer comme touché immédiatement pour éviter les re-rendus trop fréquents
-  // On le fait uniquement sur blur
-}, []);
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    
+    setForm(prev => ({ ...prev, [name]: val }));
+    
+    // Ne pas marquer comme touché immédiatement pour éviter les re-rendus trop fréquents
+    // On le fait uniquement sur blur
+  }, []);
 
-const handleBlur = useCallback((name: keyof FormType) => {
-  setTouched(prev => ({ ...prev, [name]: true }));
-}, []);
+  const handleBlur = useCallback((name: keyof FormType) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+  }, []);
 
 
   const handleSelect = (field: 'categorie' | 'type', value: string) => {
@@ -269,9 +269,6 @@ const handleBlur = useCallback((name: keyof FormType) => {
     setGlobalError('');
   };
 
-  const handleBlur = (name: keyof FormType) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
-  };
 
   const goToStep = (stepIndex: number) => {
     if (stepIndex > currentStep) {
