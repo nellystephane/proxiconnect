@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
 import API from '../../api/axios';
+
 
 // ===== TYPES =====
 interface FormType {
@@ -21,11 +22,21 @@ interface FormType {
   details: string;
 }
 
+interface FormErrors {
+  titre?: string;
+  description?: string;
+  categorie?: string;
+  ville?: string;
+  montant?: string;
+  photos?: string;
+}
+
 interface CategoryOption {
   value: string;
   label: string;
   color: string;
 }
+
 
 // ===== DONNÉES =====
 const CATEGORIES: CategoryOption[] = [
@@ -52,13 +63,30 @@ const TYPES = [
   { value: 'autre', label: 'Autre', color: '#64748b' },
 ];
 
+const STEPS = [
+  { id: 'infos', label: 'Infos', icon: Sparkles },
+  { id: 'photos', label: 'Photos', icon: ImageIcon },
+  { id: 'localisation', label: 'Localisation', icon: MapPin },
+];
+
 interface DeposerProps {
   onClose?: () => void;
 }
 
+
 const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const modalRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // ===== STATE =====
+  const [currentStep, setCurrentStep] = useState(0);
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [globalError, setGlobalError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const [form, setForm] = useState<FormType>({
     titre: '',
@@ -76,15 +104,64 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     details: '',
   });
 
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
   // Custom selects state
   const [openCategory, setOpenCategory] = useState(false);
   const [openType, setOpenType] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
 
+
+  // ===== VALIDATION =====
+  const validateField = useCallback((name: keyof FormType, value: any): string | undefined => {
+    switch (name) {
+      case 'titre':
+        if (!value || value.trim().length === 0) return 'Le titre est obligatoire';
+        if (value.trim().length < 5) return 'Le titre doit contenir au moins 5 caractères';
+        if (value.trim().length > 100) return 'Le titre ne doit pas dépasser 100 caractères';
+        return undefined;
+      case 'description':
+        if (!value || value.trim().length === 0) return 'La description est obligatoire';
+        if (value.trim().length < 20) return 'La description doit contenir au moins 20 caractères';
+        if (value.trim().length > 500) return 'La description ne doit pas dépasser 500 caractères';
+        return undefined;
+      case 'categorie':
+        if (!value) return 'Veuillez sélectionner une catégorie';
+        return undefined;
+      case 'ville':
+        if (!value || value.trim().length === 0) return 'La ville est obligatoire';
+        return undefined;
+      case 'montant':
+        if (!form.estGratuit) {
+          const num = Number(value);
+          if (value && (isNaN(num) || num < 0)) return 'Le montant doit être un nombre positif';
+        }
+        return undefined;
+      default:
+        return undefined;
+    }
+  }, [form.estGratuit]);
+
+  const validateStep = useCallback((stepIndex: number): boolean => {
+    const newErrors: FormErrors = {};
+    let isValid = true;
+
+    if (stepIndex === 0) {
+      const fields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
+      fields.forEach(field => {
+        const error = validateField(field, form[field]);
+        if (error) {
+          newErrors[field] = error;
+          isValid = false;
+        }
+      });
+    }
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return isValid;
+  }, [form, validateField]);
+
+
+  // ===== EFFETS =====
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
@@ -110,29 +187,90 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     };
   }, []);
 
+  // Validation en temps réel pour les champs touchés
+  useEffect(() => {
+    const newErrors: FormErrors = {};
+    Object.keys(touched).forEach(key => {
+      if (touched[key]) {
+        const error = validateField(key as keyof FormType, form[key as keyof FormType]);
+        if (error) {
+          newErrors[key as keyof FormErrors] = error;
+        }
+      }
+    });
+    setErrors(prev => ({ ...prev, ...newErrors }));
+  }, [form, touched, validateField]);
+
+
+  // ===== HANDLERS =====
   const handleClose = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      navigate(-1);
-    }
+    setIsClosing(true);
+    setTimeout(() => {
+      if (onClose) {
+        onClose();
+      } else {
+        navigate(-1);
+      }
+    }, 300);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
     setForm(prev => ({ ...prev, [name]: val }));
-    if (error) setError('');
+    setTouched(prev => ({ ...prev, [name]: true }));
+    setGlobalError('');
   };
 
   const handleSelect = (field: 'categorie' | 'type', value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
     if (field === 'categorie') setOpenCategory(false);
     if (field === 'type') setOpenType(false);
-    if (error) setError('');
+    setGlobalError('');
   };
 
-  // Met à jour l'URL d'une photo (appelée par ImageUploader)
+  const handleBlur = (name: keyof FormType) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  const goToStep = (stepIndex: number) => {
+    if (stepIndex > currentStep) {
+      if (!validateStep(currentStep)) {
+        const stepFields: Record<number, string[]> = {
+          0: ['titre', 'description', 'categorie', 'ville'],
+          1: [],
+          2: ['ville'],
+        };
+        const fieldsToTouch = stepFields[currentStep] || [];
+        setTouched(prev => {
+          const next = { ...prev };
+          fieldsToTouch.forEach(f => { next[f] = true; });
+          return next;
+        });
+        return;
+      }
+      setDirection('next');
+    } else {
+      setDirection('prev');
+    }
+    setCurrentStep(stepIndex);
+    setGlobalError('');
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNext = () => {
+    if (currentStep < STEPS.length - 1) {
+      goToStep(currentStep + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      goToStep(currentStep - 1);
+    }
+  };
+
   const handlePhotoChange = (index: number, value: string) => {
     const newPhotos = [...form.photos];
     newPhotos[index] = value;
@@ -151,11 +289,19 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setGlobalError('');
 
-    if (!form.titre || !form.description || !form.categorie || !form.ville) {
-      setError('Titre, description, catégorie et ville sont obligatoires.');
-      return;
+    for (let i = 0; i < STEPS.length; i++) {
+      if (!validateStep(i)) {
+        setCurrentStep(i);
+        const allFields = ['titre', 'description', 'categorie', 'ville', 'montant'];
+        setTouched(prev => {
+          const next = { ...prev };
+          allFields.forEach(f => { next[f] = true; });
+          return next;
+        });
+        return;
+      }
     }
 
     const payload = {
@@ -183,13 +329,109 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       await API.post('/annonces', payload);
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la création de l'annonce.");
+      setGlobalError(err.response?.data?.message || "Erreur lors de la création de l'annonce.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== COMPOSANTS INTERNES =====
+
+  // ===== SOUS-COMPOSANTS =====
+
+  const StepIndicator = () => (
+    <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-6 py-4">
+      <div className="flex items-center justify-center gap-2">
+        {STEPS.map((step, i) => {
+          const StepIcon = step.icon;
+          const isActive = i === currentStep;
+          const isCompleted = i < currentStep;
+          const isClickable = i <= currentStep || validateStep(currentStep);
+
+          return (
+            <div key={step.id} className="flex items-center">
+              <button
+                type="button"
+                onClick={() => isClickable && goToStep(i)}
+                disabled={!isClickable && i > currentStep}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${
+                  isActive
+                    ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
+                    : isCompleted
+                      ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                      : 'bg-slate-100 text-slate-400'
+                } ${!isClickable && i > currentStep ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : isCompleted
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {isCompleted ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                </div>
+                <span className={`text-xs font-semibold hidden sm:inline ${
+                  isActive ? 'text-white' : isCompleted ? 'text-emerald-700' : 'text-slate-500'
+                }`}>
+                  {step.label}
+                </span>
+              </button>
+              {i < STEPS.length - 1 && (
+                <div className={`w-8 h-0.5 mx-1 transition-colors duration-300 ${
+                  isCompleted ? 'bg-emerald-400' : 'bg-slate-200'
+                }`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[#007AFF] transition-all duration-500 ease-out rounded-full"
+          style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+
+  const ErrorMessage = ({ error }: { error?: string }) => {
+    if (!error) return null;
+    return (
+      <div className="flex items-center gap-1.5 mt-1.5 animate-fade-in">
+        <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+        <span className="text-xs text-red-500 font-medium">{error}</span>
+      </div>
+    );
+  };
+
+  const FieldWrapper = ({
+    children,
+    label,
+    required,
+    error,
+    name,
+    helper,
+  }: {
+    children: React.ReactNode;
+    label: string;
+    required?: boolean;
+    error?: string;
+    name: keyof FormType;
+    helper?: string;
+  }) => {
+    const hasError = !!error && touched[name];
+    return (
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          {label}
+          {required && <span className="text-red-400 ml-0.5">*</span>}
+        </label>
+        {children}
+        {hasError && <ErrorMessage error={error} />}
+        {helper && !hasError && <span className="text-[10px] text-slate-400">{helper}</span>}
+      </div>
+    );
+  };
 
   const CustomSelect = ({
     label,
@@ -200,6 +442,9 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     setIsOpen,
     refContainer,
     placeholder = 'Sélectionnez...',
+    required,
+    error,
+    name,
   }: {
     label: string;
     value: string;
@@ -209,19 +454,32 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     setIsOpen: (open: boolean) => void;
     refContainer: React.RefObject<HTMLDivElement>;
     placeholder?: string;
+    required?: boolean;
+    error?: string;
+    name: keyof FormType;
   }) => {
     const selected = options.find(opt => opt.value === value);
+    const hasError = !!error && touched[name];
 
     return (
       <div className="space-y-2 relative" ref={refContainer}>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          {label}
+          {required && <span className="text-red-400 ml-0.5">*</span>}
+        </label>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
           className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
-            isOpen
-              ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
-              : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
+            hasError
+              ? 'border-red-300 bg-red-50 ring-2 ring-red-100'
+              : isOpen
+                ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
+                : value
+                  ? 'border-emerald-200 bg-emerald-50/30'
+                  : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
           }`}
         >
           <span className="flex items-center gap-3">
@@ -243,7 +501,10 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+          <div
+            className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+            role="listbox"
+          >
             <div className="max-h-56 overflow-y-auto py-1">
               {options.map((opt) => {
                 const isSelected = opt.value === value;
@@ -251,6 +512,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                   <button
                     key={opt.value}
                     type="button"
+                    role="option"
+                    aria-selected={isSelected}
                     onClick={() => onSelect(opt.value)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                       isSelected
@@ -270,6 +533,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             </div>
           </div>
         )}
+        {hasError && <ErrorMessage error={error} />}
       </div>
     );
   };
@@ -310,295 +574,516 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     </label>
   );
 
+  const TextInput = ({
+    name,
+    value,
+    onChange,
+    onBlur,
+    placeholder,
+    required,
+    error,
+    type = 'text',
+    maxLength,
+    minLength,
+    suffix,
+    helper,
+  }: {
+    name: keyof FormType;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur?: () => void;
+    placeholder?: string;
+    required?: boolean;
+    error?: string;
+    type?: string;
+    maxLength?: number;
+    minLength?: number;
+    suffix?: string;
+    helper?: string;
+  }) => {
+    const hasError = !!error && touched[name];
+    const isValid = !hasError && touched[name] && value && value.trim().length > 0;
+
+    return (
+      <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} name={name} helper={helper}>
+        <div className="relative">
+          <input
+            name={name}
+            type={type}
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            placeholder={placeholder}
+            required={required}
+            maxLength={maxLength}
+            minLength={minLength}
+            className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all ${
+              hasError
+                ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
+                : isValid
+                  ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
+                  : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
+            } ${suffix ? 'pr-12 text-right font-semibold' : ''}`}
+          />
+          {suffix && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{suffix}</span>
+          )}
+          {isValid && !suffix && (
+            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+          )}
+        </div>
+        {maxLength && (
+          <div className={`text-right text-[10px] transition-colors ${
+            value.length > maxLength * 0.9 ? 'text-amber-500 font-medium' : 'text-slate-400'
+          }`}>
+            {value.length}/{maxLength}
+          </div>
+        )}
+      </FieldWrapper>
+    );
+  };
+
+  const TextArea = ({
+    name,
+    value,
+    onChange,
+    onBlur,
+    placeholder,
+    required,
+    error,
+    rows = 4,
+    maxLength,
+    helper,
+  }: {
+    name: keyof FormType;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    onBlur?: () => void;
+    placeholder?: string;
+    required?: boolean;
+    error?: string;
+    rows?: number;
+    maxLength?: number;
+    helper?: string;
+  }) => {
+    const hasError = !!error && touched[name];
+    const isValid = !hasError && touched[name] && value && value.trim().length >= 20;
+    const nearLimit = maxLength && value.length > maxLength * 0.9;
+
+    return (
+      <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} name={name} helper={helper}>
+        <div className="relative">
+          <textarea
+            name={name}
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            placeholder={placeholder}
+            required={required}
+            rows={rows}
+            maxLength={maxLength}
+            className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all resize-none ${
+              hasError
+                ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
+                : isValid
+                  ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
+                  : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
+            }`}
+          />
+          {isValid && (
+            <Check className="absolute right-3 top-3 w-4 h-4 text-emerald-500" />
+          )}
+        </div>
+        {maxLength && (
+          <div className={`text-right text-[10px] transition-colors ${
+            nearLimit ? 'text-red-500 font-medium' : value.length > maxLength * 0.8 ? 'text-amber-500 font-medium' : 'text-slate-400'
+          }`}>
+            {value.length}/{maxLength}
+          </div>
+        )}
+      </FieldWrapper>
+    );
+  };
+
+  const renderStepInfos = () => (
+    <div className="space-y-5 animate-step-in">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="w-4 h-4 text-[#007AFF]" />
+        <h3 className="text-base font-semibold text-slate-800">Informations générales</h3>
+      </div>
+
+      <TextInput
+        name="titre"
+        value={form.titre}
+        onChange={handleChange}
+        onBlur={() => handleBlur('titre')}
+        placeholder="Ex: Électricien pro disponible pour dépannage"
+        required
+        error={errors.titre}
+        maxLength={100}
+        helper="Donnez un titre clair et attractif"
+      />
+
+      <TextArea
+        name="description"
+        value={form.description}
+        onChange={handleChange}
+        onBlur={() => handleBlur('description')}
+        placeholder="Décrivez votre service, tarifs, disponibilités..."
+        required
+        error={errors.description}
+        maxLength={500}
+        helper="Minimum 20 caractères. Décrivez ce que vous proposez en détail."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CustomSelect
+          label="Catégorie"
+          value={form.categorie}
+          options={CATEGORIES}
+          onSelect={(v) => handleSelect('categorie', v)}
+          isOpen={openCategory}
+          setIsOpen={setOpenCategory}
+          refContainer={categoryRef}
+          placeholder="Choisir une catégorie"
+          required
+          error={errors.categorie}
+          name="categorie"
+        />
+        <CustomSelect
+          label="Type"
+          value={form.type}
+          options={TYPES}
+          onSelect={(v) => handleSelect('type', v)}
+          isOpen={openType}
+          setIsOpen={setOpenType}
+          refContainer={typeRef}
+          placeholder="Type d'annonce"
+          name="type"
+        />
+      </div>
+
+      {form.categorie && (
+        <div className="space-y-2 animate-fade-in">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            Sous-catégorie <span className="text-slate-300 font-normal">(optionnel)</span>
+          </label>
+          <input
+            name="sousCategorie"
+            value={form.sousCategorie}
+            onChange={handleChange}
+            placeholder={`Ex: pour "${form.categorie}"...`}
+            className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
+          />
+        </div>
+      )}
+
+      <div className="space-y-4 p-5 rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
+        <div className="flex flex-wrap gap-3">
+          <ToggleSwitch
+            checked={form.estGratuit}
+            onChange={(checked) => {
+              setForm(prev => ({
+                ...prev,
+                estGratuit: checked,
+                estNegociable: checked ? false : prev.estNegociable,
+                montant: checked ? '' : prev.montant
+              }));
+            }}
+            label="Gratuit"
+          />
+          <ToggleSwitch
+            checked={form.estNegociable}
+            onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
+            label="Négociable"
+            disabled={form.estGratuit}
+          />
+        </div>
+        {!form.estGratuit && (
+          <div className="relative animate-fade-in">
+            <input
+              type="number"
+              name="montant"
+              value={form.montant}
+              onChange={handleChange}
+              placeholder="0"
+              className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
+              min="0"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderStepPhotos = () => {
+    const filledCount = form.photos.filter(p => p.trim()).length;
+    return (
+      <div className="space-y-5 animate-step-in">
+        <div className="flex items-center gap-2 mb-1">
+          <ImageIcon className="w-4 h-4 text-[#007AFF]" />
+          <h3 className="text-base font-semibold text-slate-800">Photos</h3>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-600">
+            Ajoutez des photos pour illustrer votre annonce
+            <span className="text-slate-400 ml-1">({filledCount}/6)</span>
+          </p>
+          {form.photos.length < 6 && (
+            <button
+              type="button"
+              onClick={addPhotoField}
+              className="flex items-center gap-1 text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ajouter
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {form.photos.map((photo, i) => (
+            <div
+              key={i}
+              className={`relative group rounded-2xl border-2 border-dashed transition-all duration-200 overflow-hidden ${
+                photo.trim()
+                  ? 'border-emerald-200 bg-emerald-50/30'
+                  : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
+              }`}
+            >
+              <div className="aspect-square">
+                <ImageUploader
+                  currentImage={photo}
+                  onUpload={(url) => handlePhotoChange(i, url)}
+                />
+              </div>
+              {i === 0 && photo.trim() && (
+                <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#007AFF] text-white text-[10px] font-bold rounded-full">
+                  COVER
+                </div>
+              )}
+              {form.photos.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removePhotoField(i)}
+                  className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  aria-label="Supprimer"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+          {Array.from({ length: Math.max(0, 6 - form.photos.length) }).map((_, i) => (
+            <div
+              key={`placeholder-${i}`}
+              className="aspect-square rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/ border-slate-100 bg-slate-50/50 flex items-center justify-center"
+            >
+              <ImageIcon className="w-8 h-8 text-slate-200" />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100">
+          <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">
+            La première photo sera utilisée comme image principale de votre annonce.
+            Des photos de qualité augmentent vos chances de contact de 3x.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStepLocalisation = () => (
+    <div className="space-y-5 animate-step-in">
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="w-4 h-4 text-[#007AFF]" />
+        <h3 className="text-base font-semibold text-slate-800">Localisation</h3>
+      </div>
+
+      <div className="p-5 rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TextInput
+            name="pays"
+            value={form.pays}
+            onChange={handleChange}
+            placeholder="Bénin"
+            helper="Pays où se trouve le service"
+          />
+          <TextInput
+            name="ville"
+            value={form.ville}
+            onChange={handleChange}
+            onBlur={() => handleBlur('ville')}
+            placeholder="Cotonou"
+            required
+            error={errors.ville}
+            helper="Ville principale"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TextInput
+            name="quartier"
+            value={form.quartier}
+            onChange={handleChange}
+            placeholder="Akpakpa"
+            helper="Quartier précis"
+          />
+          <TextInput
+            name="details"
+            value={form.details}
+            onChange={handleChange}
+            placeholder="À côté de la pharmacie..."
+            helper="Points de repère"
+          />
+        </div>
+      </div>
+
+      <div className="p-5 rounded-2xl border border-slate-200/60 bg-slate-50/50 backdrop-blur-sm space-y-3">
+        <h4 className="text-sm font-semibold text-slate-700">Récapitulatif</h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Titre</span>
+            <span className="text-slate-900 font-medium truncate max-w-[200px]">{form.titre || '—'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Catégorie</span>
+            <span className="flex items-center gap-1.5">
+              {form.categorie && (
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: CATEGORIES.find(c => c.value === form.categorie)?.color }}
+                />
+              )}
+              <span className="text-slate-900 font-medium">{form.categorie || '—'}</span>
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Type</span>
+            <span className="text-slate-900 font-medium capitalize">{form.type}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Prix</span>
+            <span className="text-slate-900 font-medium">
+              {form.estGratuit ? 'Gratuit' : form.montant ? `${form.montant} XOF${form.estNegociable ? ' (négociable)' : ''}` : '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Photos</span>
+            <span className="text-slate-900 font-medium">{form.photos.filter(p => p.trim()).length} photo(s)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Localisation</span>
+            <span className="text-slate-900 font-medium truncate max-w-[200px]">
+              {[form.ville, form.quartier].filter(Boolean).join(', ') || '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+
+  // ===== RENDU PRINCIPAL =====
+
+  const stepComponents = [renderStepInfos, renderStepPhotos, renderStepLocalisation];
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
+      className={`fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
       onClick={handleClose}
     >
-      {/* Modal Glassmorphism */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
+        className={`relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-hidden glass rounded-t-3xl md:rounded-3xl shadow-2xl transition-all duration-300 ${
+          isClosing ? 'translate-y-8 scale-[0.98] opacity-0' : 'translate-y-0 scale-100 opacity-100'
+        }`}
         onClick={(e) => e.stopPropagation()}
         style={{ overscrollBehavior: 'contain' }}
       >
-        {/* Croix fixe */}
         <button
           onClick={handleClose}
-          className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm hover:bg-white transition-colors"
+          className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm hover:bg-white transition-colors"
           aria-label="Fermer"
         >
           <X className="w-5 h-5 text-slate-700" />
         </button>
 
-        {/* Barre d'étapes décorative */}
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-3 flex items-center gap-4">
-          {['Infos', 'Photos', 'Localisation'].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                i === 0 ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'
-              }`}>
-                {i + 1}
-              </div>
-              <span className={`text-xs font-medium ${i === 0 ? 'text-[#007AFF]' : 'text-slate-400'}`}>
-                {label}
-              </span>
-              {i < 2 && <ChevronRight className="w-4 h-4 text-slate-300" />}
-            </div>
-          ))}
-        </div>
+        <StepIndicator />
 
-        {/* Contenu */}
-        <div className="px-6 pb-6 pt-4 space-y-6">
-          {error && (
-            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
-              {error}
+        <div
+          ref={contentRef}
+          className="px-6 pb-6 pt-4 overflow-y-auto"
+          style={{ maxHeight: 'calc(90vh - 120px)', overscrollBehavior: 'contain' }}
+        >
+          {globalError && (
+            <div className="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600 flex items-center gap-2 animate-fade-in">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {globalError}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Section 1 : Infos générales */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-[#007AFF]" />
-                <h3 className="text-base font-semibold text-slate-800">Informations générales</h3>
-              </div>
+            {stepComponents[currentStep]()}
 
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre *</label>
-                <input
-                  name="titre"
-                  value={form.titre}
-                  onChange={handleChange}
-                  placeholder="Ex: Électricien pro disponible pour dépannage"
-                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                  required
-                  maxLength={100}
-                />
-                <div className="text-right text-[10px] text-slate-400">{form.titre.length}/100</div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description *</label>
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Décrivez votre service, tarifs, disponibilités..."
-                  className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all resize-none"
-                  required
-                  maxLength={500}
-                />
-                <div className="text-right text-[10px] text-slate-400">{form.description.length}/500</div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <CustomSelect
-                  label="Catégorie *"
-                  value={form.categorie}
-                  options={CATEGORIES}
-                  onSelect={(v) => handleSelect('categorie', v)}
-                  isOpen={openCategory}
-                  setIsOpen={setOpenCategory}
-                  refContainer={categoryRef}
-                  placeholder="Choisir une catégorie"
-                />
-                <CustomSelect
-                  label="Type"
-                  value={form.type}
-                  options={TYPES}
-                  onSelect={(v) => handleSelect('type', v)}
-                  isOpen={openType}
-                  setIsOpen={setOpenType}
-                  refContainer={typeRef}
-                  placeholder="Type d'annonce"
-                />
-              </div>
-
-              {form.categorie && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Sous-catégorie <span className="text-slate-300">(optionnel)</span>
-                  </label>
-                  <input
-                    name="sousCategorie"
-                    value={form.sousCategorie}
-                    onChange={handleChange}
-                    placeholder={`Ex: pour "${form.categorie}"...`}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                  />
-                </div>
+            <div className="flex items-center gap-3 pt-4 border-t border-slate-200/60">
+              {currentStep > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700-slate-700 font-semibold hover:bg-slate-50 transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Retour
+                </button>
               )}
 
-              <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
-                <div className="flex flex-wrap gap-3">
-                  <ToggleSwitch
-                    checked={form.estGratuit}
-                    onChange={(checked) => {
-                      setForm(prev => ({
-                        ...prev,
-                        estGratuit: checked,
-                        estNegociable: checked ? false : prev.estNegociable
-                      }));
-                    }}
-                    label="Gratuit"
-                  />
-                  <ToggleSwitch
-                    checked={form.estNegociable}
-                    onChange={(checked) => setForm(prev => ({ ...prev, estNegociable: checked }))}
-                    label="Négociable"
-                    disabled={form.estGratuit}
-                  />
-                </div>
-                {!form.estGratuit && (
-                  <div className="relative">
-                    <input
-                      type="number"
-                      name="montant"
-                      value={form.montant}
-                      onChange={handleChange}
-                      placeholder="0"
-                      className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
-                      min="0"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 2 : Photos (utilise ImageUploader) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ImageIcon className="w-4 h-4 text-[#007AFF]" />
-                <h3 className="text-base font-semibold text-slate-800">Photos</h3>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Photos <span className="text-slate-300">({form.photos.filter(p => p.trim()).length}/6)</span>
-                </label>
-                {form.photos.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={addPhotoField}
-                    className="text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors"
-                  >
-                    + Ajouter
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                {form.photos.map((photo, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 bg-white/70 backdrop-blur-sm">
-                    <ImageUploader
-                      currentImage={photo}
-                      onUpload={(url) => handlePhotoChange(i, url)}
-                    />
-                    {form.photos.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePhotoField(i)}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        aria-label="Supprimer"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
+              {currentStep < STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg shadow-blue-200/50"
+                >
+                  Continuer
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    {loading ? (
+                      <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Publier l'annonce
+                      </>
                     )}
-                  </div>
-                ))}
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Utilisez le bouton pour prendre une photo ou en choisir une depuis votre galerie.
-              </p>
+                  </span>
+                  <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </button>
+              )}
             </div>
-
-            {/* Section 3 : Localisation */}
-            <div className="space-y-4 p-4 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <MapPin className="w-4 h-4 text-[#007AFF]" />
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Localisation</label>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Pays</label>
-                  <input
-                    name="pays"
-                    value={form.pays}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Bénin"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Ville *</label>
-                  <input
-                    name="ville"
-                    value={form.ville}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Cotonou"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Quartier</label>
-                  <input
-                    name="quartier"
-                    value={form.quartier}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="Akpakpa"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-medium text-slate-400">Points de repère</label>
-                  <input
-                    name="details"
-                    value={form.details}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all"
-                    placeholder="À côté de la pharmacie..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bouton de soumission */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {loading ? (
-                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Publier l'annonce
-                  </>
-                )}
-              </span>
-              <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </button>
           </form>
         </div>
       </div>
 
-      {/* ===== GLOBAL STYLES ===== */}
       <style>{`
         .glass {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.5);
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
         }
         @media (prefers-reduced-motion: no-preference) {
           .animate-slide-up {
@@ -608,6 +1093,20 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             from { opacity: 0; transform: translateY(30px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
           }
+          .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-step-in {
+            animation: stepIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          @keyframes stepIn {
+            from { opacity: 0; transform: translateX(${direction === 'next' ? '20px' : '-20px'}); }
+            to { opacity: 1; transform: translateX(0); }
+          }
         }
         .overflow-y-auto {
           -webkit-overflow-scrolling: touch;
@@ -616,5 +1115,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     </div>
   );
 };
+
 
 export default Deposer;
