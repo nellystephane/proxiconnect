@@ -146,17 +146,17 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     let isValid = true;
 
     if (stepIndex === 0) {
-  const fields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
-
-  fields.forEach(field => {
-    const error = validateField(field, form[field]);
-
-    if (error) {
-      newErrors[field] = error;
-      isValid = false;
+      const fields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
+    
+      fields.forEach(field => {
+        const error = validateField(field, form[field]);
+    
+        if (error) {
+          newErrors[field] = error;
+          isValid = false;
+        }
+      });
     }
-  });
-}
     setErrors(prev => ({ ...prev, ...newErrors }));
     return isValid;
   }, [form, validateField]);
