@@ -210,8 +210,10 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     };
   }, []);
 
-  // Validation en temps réel
-  useEffect(() => {
+
+// Validation en temps réel optimisée - utilise debounce
+useEffect(() => {
+  const timeoutId = setTimeout(() => {
     const newErrors: FormErrors = {};
     const fieldsToValidate = ['titre', 'description', 'categorie', 'ville', 'montant'] as const;
     
@@ -225,7 +227,10 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     });
     
     setErrors(prev => ({ ...prev, ...newErrors }));
-  }, [form.titre, form.description, form.categorie, form.ville, form.montant, touched, validateField]);
+  }, 300); // Délai de 300ms avant validation
+  
+  return () => clearTimeout(timeoutId);
+}, [form.titre, form.description, form.categorie, form.ville, form.montant, touched, validateField]);
 
 
   // ===== HANDLERS =====
@@ -240,13 +245,21 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     }, 300);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-    setForm(prev => ({ ...prev, [name]: val }));
-    setTouched(prev => ({ ...prev, [name]: true }));
-    setGlobalError('');
-  };
+  // ===== HANDLERS OPTIMISÉS =====
+const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const { name, value, type } = e.target;
+  const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+  
+  setForm(prev => ({ ...prev, [name]: val }));
+  
+  // Ne pas marquer comme touché immédiatement pour éviter les re-rendus trop fréquents
+  // On le fait uniquement sur blur
+}, []);
+
+const handleBlur = useCallback((name: keyof FormType) => {
+  setTouched(prev => ({ ...prev, [name]: true }));
+}, []);
+
 
   const handleSelect = (field: 'categorie' | 'type', value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
