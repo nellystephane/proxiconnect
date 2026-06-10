@@ -26,14 +26,8 @@ interface PhotoItem {
   url: string;
 }
 
-interface FormErrors {
-  titre?: string;
-  description?: string;
-  categorie?: string;
-  ville?: string;
-  montant?: string;
-  photos?: string;
-}
+// Correction : FormErrors accepte toutes les clés de FormType
+type FormErrors = Partial<Record<keyof FormType, string>>;
 
 interface CategoryOption {
   value: string;
@@ -624,7 +618,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     }
     setCurrentStep(stepIndex);
     setGlobalError('');
-    contentRef.current?.scrollTo({ top: 0, behavior: 'auto' }); // 'smooth' removed for mobile stability
+    contentRef.current?.scrollTo({ top: 0, behavior: 'auto' });
   }, [currentStep, form, validateStep]);
 
   const handleNext = useCallback(() => {
