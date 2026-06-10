@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
 import API from '../../api/axios';
-
 
 // ===== TYPES =====
 interface FormType {
@@ -15,11 +14,16 @@ interface FormType {
   montant: string;
   estNegociable: boolean;
   estGratuit: boolean;
-  photos: string[];
+  photos: PhotoItem[];
   pays: string;
   ville: string;
   quartier: string;
   details: string;
+}
+
+interface PhotoItem {
+  id: string;
+  url: string;
 }
 
 interface FormErrors {
@@ -37,8 +41,7 @@ interface CategoryOption {
   color: string;
 }
 
-
-// ===== DONNÉES =====
+// ===== DONNEES =====
 const CATEGORIES: CategoryOption[] = [
   { value: 'Électricité', label: 'Électricité', color: '#f59e0b' },
   { value: 'Plomberie', label: 'Plomberie', color: '#3b82f6' },
@@ -64,7 +67,7 @@ const TYPES = [
 ];
 
 const STEPS = [
-  { id: 'infos', label: 'Infos', icon: Sparkles },
+  { id: 'infos', label: 'Informations', icon: Sparkles },
   { id: 'photos', label: 'Photos', icon: ImageIcon },
   { id: 'localisation', label: 'Localisation', icon: MapPin },
 ];
@@ -73,13 +76,382 @@ interface DeposerProps {
   onClose?: () => void;
 }
 
+// ===== COMPOSANTS EXTERNES (memorisés) =====
+const StepIndicator = memo(({ currentStep, onStepClick }: { currentStep: number; onStepClick: (index: number) => void }) => (
+  <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-6 py-4">
+    <div className="flex items-center justify-center gap-2">
+      {STEPS.map((step, i) => {
+        const StepIcon = step.icon;
+        const isActive = i === currentStep;
+        const isCompleted = i < currentStep;
 
+        return (
+          <div key={step.id} className="flex items-center">
+            <button
+              type="button"
+              onClick={() => onStepClick(i)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${
+                isActive
+                  ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
+                  : isCompleted
+                    ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                isActive
+                  ? 'bg-white/20 text-white'
+                  : isCompleted
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-200 text-slate-500'
+              }`}>
+                {isCompleted ? <Check className="w-3.5 h-3.5" /> : i + 1}
+              </div>
+              <span className={`text-xs font-semibold hidden sm:inline ${
+                isActive ? 'text-white' : isCompleted ? 'text-emerald-700' : 'text-slate-500'
+              }`}>
+                {step.label}
+              </span>
+            </button>
+            {i < STEPS.length - 1 && (
+              <div className={`w-8 h-0.5 mx-1 transition-colors duration-300 ${
+                isCompleted ? 'bg-emerald-400' : 'bg-slate-200'
+              }`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+    <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-[#007AFF] transition-all duration-500 ease-out rounded-full"
+        style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+      />
+    </div>
+  </div>
+));
+
+const ErrorMessage = memo(({ error }: { error?: string }) => {
+  if (!error) return null;
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 animate-fade-in">
+      <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+      <span className="text-xs text-red-500 font-medium">{error}</span>
+    </div>
+  );
+});
+
+const FieldWrapper = memo(({
+  children,
+  label,
+  required,
+  error,
+  touched,
+  name,
+  helper,
+}: {
+  children: React.ReactNode;
+  label: string;
+  required?: boolean;
+  error?: string;
+  touched: boolean;
+  name: string;
+  helper?: string;
+}) => {
+  const hasError = !!error && touched;
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        {label}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      {children}
+      {hasError && <ErrorMessage error={error} />}
+      {helper && !hasError && <span className="text-[10px] text-slate-400">{helper}</span>}
+    </div>
+  );
+});
+
+const CustomSelect = memo(({
+  label,
+  value,
+  options,
+  onSelect,
+  isOpen,
+  setIsOpen,
+  containerRef,
+  placeholder = 'Sélectionnez...',
+  required,
+  error,
+  touched,
+  name,
+}: {
+  label: string;
+  value: string;
+  options: CategoryOption[];
+  onSelect: (value: string) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  containerRef: React.RefObject<HTMLDivElement>;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  touched: boolean;
+  name: string;
+}) => {
+  const selected = options.find(opt => opt.value === value);
+  const hasError = !!error && touched;
+
+  return (
+    <div className="space-y-2 relative" ref={containerRef}>
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        {label}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
+          hasError
+            ? 'border-red-300 bg-red-50 ring-2 ring-red-100'
+            : isOpen
+              ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
+              : value
+                ? 'border-emerald-200 bg-emerald-50/30'
+                : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          {selected && (
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: selected.color }}
+            />
+          )}
+          <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+            {selected ? selected.label : placeholder}
+          </span>
+        </span>
+        <span className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+          role="listbox"
+        >
+          <div className="max-h-56 overflow-y-auto py-1">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => onSelect(opt.value)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                    isSelected
+                      ? 'bg-blue-50 text-[#007AFF]'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: opt.color }}
+                  />
+                  <span className="flex-1 text-sm font-medium">{opt.label}</span>
+                  {isSelected && <Check className="w-4 h-4 text-[#007AFF] flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+const ToggleSwitch = memo(({
+  checked,
+  onChange,
+  label,
+  disabled = false
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  disabled?: boolean;
+}) => (
+  <label className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+    disabled
+      ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+      : checked
+        ? 'border-emerald-200 bg-emerald-50'
+        : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
+  }`}>
+    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+      checked ? 'bg-[#007AFF]' : 'bg-slate-200'
+    } ${disabled ? 'opacity-50' : ''}`}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="sr-only"
+      />
+      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+        checked ? 'left-5' : 'left-0.5'
+      }`} />
+    </div>
+  </label>
+));
+
+const TextInput = memo(({
+  name,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  required,
+  error,
+  touched,
+  type = 'text',
+  maxLength,
+  suffix,
+  helper,
+}: {
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  touched: boolean;
+  type?: string;
+  maxLength?: number;
+  suffix?: string;
+  helper?: string;
+}) => {
+  const hasError = !!error && touched;
+  const isValid = !hasError && touched && value && value.trim().length > 0;
+
+  return (
+    <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} touched={touched} name={name} helper={helper}>
+      <div className="relative">
+        <input
+          name={name}
+          type={type}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          required={required}
+          maxLength={maxLength}
+          className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all ${
+            hasError
+              ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
+              : isValid
+                ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
+                : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
+          } ${suffix ? 'pr-12 text-right font-semibold' : ''}`}
+        />
+        {suffix && (
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{suffix}</span>
+        )}
+        {isValid && !suffix && (
+          <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+        )}
+      </div>
+      {maxLength && (
+        <div className={`text-right text-[10px] transition-colors ${
+          value.length > maxLength * 0.9 ? 'text-amber-500 font-medium' : 'text-slate-400'
+        }`}>
+          {value.length}/{maxLength}
+        </div>
+      )}
+    </FieldWrapper>
+  );
+});
+
+const TextArea = memo(({
+  name,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  required,
+  error,
+  touched,
+  rows = 4,
+  maxLength,
+  helper,
+}: {
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  touched: boolean;
+  rows?: number;
+  maxLength?: number;
+  helper?: string;
+}) => {
+  const hasError = !!error && touched;
+  const isValid = !hasError && touched && value && value.trim().length >= 20;
+
+  return (
+    <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} touched={touched} name={name} helper={helper}>
+      <div className="relative">
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          required={required}
+          rows={rows}
+          maxLength={maxLength}
+          className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all resize-none ${
+            hasError
+              ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
+              : isValid
+                ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
+                : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
+          }`}
+        />
+        {isValid && (
+          <Check className="absolute right-3 top-3 w-4 h-4 text-emerald-500" />
+        )}
+      </div>
+      {maxLength && (
+        <div className={`text-right text-[10px] transition-colors ${
+          value.length > maxLength * 0.9 ? 'text-red-500 font-medium' : value.length > maxLength * 0.8 ? 'text-amber-500 font-medium' : 'text-slate-400'
+        }`}>
+          {value.length}/{maxLength}
+        </div>
+      )}
+    </FieldWrapper>
+  );
+});
+
+// ===== COMPOSANT PRINCIPAL =====
 const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // ===== STATE =====
+  // State
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -87,6 +459,10 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [openCategory, setOpenCategory] = useState(false);
+  const [openType, setOpenType] = useState(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
+  const typeRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<FormType>({
     titre: '',
@@ -104,15 +480,11 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     details: '',
   });
 
-  // Custom selects state
-  const [openCategory, setOpenCategory] = useState(false);
-  const [openType, setOpenType] = useState(false);
-  const categoryRef = useRef<HTMLDivElement>(null);
-  const typeRef = useRef<HTMLDivElement>(null);
+  // Helper: generate unique id for photo items
+  const generatePhotoId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
 
-
-  // ===== VALIDATION =====
-  const validateField = useCallback((name: keyof FormType, value: any): string | undefined => {
+  // Validation pure (sans dépendance extérieure)
+  const validateField = useCallback((name: keyof FormType, value: any, estGratuit: boolean): string | undefined => {
     switch (name) {
       case 'titre':
         if (!value || value.trim().length === 0) return 'Le titre est obligatoire';
@@ -131,7 +503,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         if (!value || value.trim().length === 0) return 'La ville est obligatoire';
         return undefined;
       case 'montant':
-        if (!form.estGratuit && value && value !== '') {
+        if (!estGratuit && value && value !== '') {
           const num = Number(value);
           if (isNaN(num) || num < 0) return 'Le montant doit être un nombre positif';
         }
@@ -139,141 +511,101 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       default:
         return undefined;
     }
-  }, [form.estGratuit]);
+  }, []);
 
-  const validateStep = useCallback((stepIndex: number): boolean => {
+  // Validation d'une étape complète
+  const validateStep = useCallback((stepIndex: number, formData: FormType): boolean => {
     const newErrors: FormErrors = {};
     let isValid = true;
 
     if (stepIndex === 0) {
-      const titreError = validateField('titre', form.titre);
-      if (titreError) {
-        newErrors.titre = titreError;
-        isValid = false;
-      }
+      const titreError = validateField('titre', formData.titre, formData.estGratuit);
+      if (titreError) { newErrors.titre = titreError; isValid = false; }
       
-      const descriptionError = validateField('description', form.description);
-      if (descriptionError) {
-        newErrors.description = descriptionError;
-        isValid = false;
-      }
+      const descriptionError = validateField('description', formData.description, formData.estGratuit);
+      if (descriptionError) { newErrors.description = descriptionError; isValid = false; }
       
-      const categorieError = validateField('categorie', form.categorie);
-      if (categorieError) {
-        newErrors.categorie = categorieError;
-        isValid = false;
-      }
+      const categorieError = validateField('categorie', formData.categorie, formData.estGratuit);
+      if (categorieError) { newErrors.categorie = categorieError; isValid = false; }
       
-      const villeError = validateField('ville', form.ville);
-      if (villeError) {
-        newErrors.ville = villeError;
-        isValid = false;
-      }
+      const villeError = validateField('ville', formData.ville, formData.estGratuit);
+      if (villeError) { newErrors.ville = villeError; isValid = false; }
     }
     
     if (stepIndex === 2) {
-      const villeError = validateField('ville', form.ville);
-      if (villeError) {
-        newErrors.ville = villeError;
-        isValid = false;
-      }
+      const villeError = validateField('ville', formData.ville, formData.estGratuit);
+      if (villeError) { newErrors.ville = villeError; isValid = false; }
     }
     
     setErrors(newErrors);
     return isValid;
-  }, [form, validateField]);
+  }, [validateField]);
 
+  // Validation complète pour submit
+  const validateAllSteps = useCallback((formData: FormType): boolean => {
+    return validateStep(0, formData) && validateStep(2, formData);
+  }, [validateStep]);
 
-  // ===== EFFETS =====
+  // Mise à jour des erreurs en temps réel (uniquement sur champs touchés)
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
-        setOpenCategory(false);
-      }
-      if (typeRef.current && !typeRef.current.contains(e.target as Node)) {
-        setOpenType(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleEsc);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-
-// Validation en temps réel optimisée - utilise debounce
-useEffect(() => {
-  const timeoutId = setTimeout(() => {
-    const newErrors: FormErrors = {};
-    const fieldsToValidate = ['titre', 'description', 'categorie', 'ville', 'montant'] as const;
-    
-    fieldsToValidate.forEach(field => {
-      if (touched[field]) {
-        const error = validateField(field, form[field]);
-        if (error) {
-          newErrors[field] = error;
+    const timeoutId = setTimeout(() => {
+      const newErrors: FormErrors = {};
+      const fieldsToValidate: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville', 'montant'];
+      
+      fieldsToValidate.forEach(field => {
+        if (touched[field]) {
+          const error = validateField(field, form[field], form.estGratuit);
+          if (error) {
+            newErrors[field] = error;
+          }
         }
-      }
-    });
-    
-    setErrors(prev => ({ ...prev, ...newErrors }));
-  }, 300); // Délai de 300ms avant validation
-  
-  return () => clearTimeout(timeoutId);
-}, [form.titre, form.description, form.categorie, form.ville, form.montant, touched, validateField]);
-
-
-  // ===== HANDLERS =====
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      if (onClose) {
-        onClose();
-      } else {
-        navigate(-1);
-      }
+      });
+      
+      setErrors(newErrors);
     }, 300);
-  };
+    
+    return () => clearTimeout(timeoutId);
+  }, [form.titre, form.description, form.categorie, form.ville, form.montant, form.estGratuit, touched, validateField]);
 
-  // ===== HANDLERS OPTIMISÉS =====
+  // Handlers
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    const onTransitionEnd = () => {
+      if (onClose) onClose();
+      else navigate(-1);
+    };
+    const modal = modalRef.current;
+    if (modal) {
+      modal.addEventListener('transitionend', onTransitionEnd, { once: true });
+    } else {
+      setTimeout(onTransitionEnd, 300);
+    }
+  }, [navigate, onClose]);
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
     
     setForm(prev => ({ ...prev, [name]: val }));
-    
-    // Ne pas marquer comme touché immédiatement pour éviter les re-rendus trop fréquents
-    // On le fait uniquement sur blur
+    setGlobalError('');
   }, []);
 
   const handleBlur = useCallback((name: keyof FormType) => {
     setTouched(prev => ({ ...prev, [name]: true }));
   }, []);
 
-
-  const handleSelect = (field: 'categorie' | 'type', value: string) => {
+  const handleSelect = useCallback((field: 'categorie' | 'type', value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setTouched(prev => ({ ...prev, [field]: true }));
     if (field === 'categorie') setOpenCategory(false);
     if (field === 'type') setOpenType(false);
     setGlobalError('');
-  };
+  }, []);
 
-
-  const goToStep = (stepIndex: number) => {
+  const goToStep = useCallback((stepIndex: number) => {
     if (stepIndex > currentStep) {
-      if (!validateStep(currentStep)) {
-        const stepFields: Record<number, string[]> = {
+      if (!validateStep(currentStep, form)) {
+        const stepFields: Record<number, (keyof FormType)[]> = {
           0: ['titre', 'description', 'categorie', 'ville'],
           1: [],
           2: ['ville'],
@@ -292,64 +624,56 @@ useEffect(() => {
     }
     setCurrentStep(stepIndex);
     setGlobalError('');
-    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    contentRef.current?.scrollTo({ top: 0, behavior: 'auto' }); // 'smooth' removed for mobile stability
+  }, [currentStep, form, validateStep]);
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      goToStep(currentStep + 1);
-    }
-  };
+  const handleNext = useCallback(() => {
+    if (currentStep < STEPS.length - 1) goToStep(currentStep + 1);
+  }, [currentStep, goToStep]);
 
-  const handlePrev = () => {
-    if (currentStep > 0) {
-      goToStep(currentStep - 1);
-    }
-  };
+  const handlePrev = useCallback(() => {
+    if (currentStep > 0) goToStep(currentStep - 1);
+  }, [currentStep, goToStep]);
 
-  const handlePhotoChange = (index: number, value: string) => {
-    const newPhotos = [...form.photos];
-    newPhotos[index] = value;
-    setForm(prev => ({ ...prev, photos: newPhotos }));
-  };
-
-  const addPhotoField = () => {
+  // Photo handlers with stable keys
+  const addPhotoField = useCallback(() => {
     if (form.photos.length < 6) {
-      setForm(prev => ({ ...prev, photos: [...prev.photos, ''] }));
+      setForm(prev => ({ ...prev, photos: [...prev.photos, { id: generatePhotoId(), url: '' }] }));
     }
-  };
+  }, [form.photos.length]);
 
-  const removePhotoField = (index: number) => {
+  const handlePhotoChange = useCallback((index: number, url: string) => {
+    setForm(prev => {
+      const newPhotos = [...prev.photos];
+      if (newPhotos[index]) {
+        newPhotos[index] = { ...newPhotos[index], url };
+      }
+      return { ...prev, photos: newPhotos };
+    });
+  }, []);
+
+  const removePhotoField = useCallback((index: number) => {
     setForm(prev => ({ 
       ...prev, 
       photos: prev.photos.filter((_, i) => i !== index) 
     }));
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setGlobalError('');
-    setLoading(true);
-
-    // Valider toutes les étapes
-    let allValid = true;
-    for (let i = 0; i <= currentStep; i++) {
-      if (!validateStep(i)) {
-        allValid = false;
-        break;
-      }
-    }
     
-    if (!allValid) {
-      const allFields = ['titre', 'description', 'categorie', 'ville'];
+    if (!validateAllSteps(form)) {
+      const allFields: (keyof FormType)[] = ['titre', 'description', 'categorie', 'ville'];
       setTouched(prev => {
         const next = { ...prev };
         allFields.forEach(f => { next[f] = true; });
         return next;
       });
-      setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     const payload = {
       titre: form.titre.trim(),
@@ -362,7 +686,7 @@ useEffect(() => {
         estNegociable: form.estNegociable,
         estGratuit: form.estGratuit
       },
-      photos: form.photos.filter(p => p && p.trim() !== ''),
+      photos: form.photos.filter(p => p.url && p.url.trim() !== '').map(p => p.url),
       localisation: {
         pays: form.pays || 'Bénin',
         ville: form.ville.trim(),
@@ -378,372 +702,31 @@ useEffect(() => {
       setGlobalError(err.response?.data?.message || "Erreur lors de la création de l'annonce.");
       setLoading(false);
     }
-  };
+  }, [form, validateAllSteps, handleClose]);
 
+  // Click outside and escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) setOpenCategory(false);
+      if (typeRef.current && !typeRef.current.contains(e.target as Node)) setOpenType(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  // ===== SOUS-COMPOSANTS =====
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = '';
+    };
+  }, [handleClose]);
 
-  const StepIndicator = () => (
-    <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-6 py-4">
-      <div className="flex items-center justify-center gap-2">
-        {STEPS.map((step, i) => {
-          const StepIcon = step.icon;
-          const isActive = i === currentStep;
-          const isCompleted = i < currentStep;
-
-          return (
-            <div key={step.id} className="flex items-center">
-              <button
-                type="button"
-                onClick={() => goToStep(i)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${
-                  isActive
-                    ? 'bg-[#007AFF] text-white shadow-lg shadow-blue-200'
-                    : isCompleted
-                      ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : isCompleted
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {isCompleted ? <Check className="w-3.5 h-3.5" /> : i + 1}
-                </div>
-                <span className={`text-xs font-semibold hidden sm:inline ${
-                  isActive ? 'text-white' : isCompleted ? 'text-emerald-700' : 'text-slate-500'
-                }`}>
-                  {step.label}
-                </span>
-              </button>
-              {i < STEPS.length - 1 && (
-                <div className={`w-8 h-0.5 mx-1 transition-colors duration-300 ${
-                  isCompleted ? 'bg-emerald-400' : 'bg-slate-200'
-                }`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[#007AFF] transition-all duration-500 ease-out rounded-full"
-          style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
-        />
-      </div>
-    </div>
-  );
-
-  const ErrorMessage = ({ error }: { error?: string }) => {
-    if (!error) return null;
-    return (
-      <div className="flex items-center gap-1.5 mt-1.5 animate-fade-in">
-        <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-        <span className="text-xs text-red-500 font-medium">{error}</span>
-      </div>
-    );
-  };
-
-  const FieldWrapper = ({
-    children,
-    label,
-    required,
-    error,
-    name,
-    helper,
-  }: {
-    children: React.ReactNode;
-    label: string;
-    required?: boolean;
-    error?: string;
-    name: keyof FormType;
-    helper?: string;
-  }) => {
-    const hasError = !!error && touched[name];
-    return (
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-          {label}
-          {required && <span className="text-red-400 ml-0.5">*</span>}
-        </label>
-        {children}
-        {hasError && <ErrorMessage error={error} />}
-        {helper && !hasError && <span className="text-[10px] text-slate-400">{helper}</span>}
-      </div>
-    );
-  };
-
-  const CustomSelect = ({
-    label,
-    value,
-    options,
-    onSelect,
-    isOpen,
-    setIsOpen,
-    refContainer,
-    placeholder = 'Sélectionnez...',
-    required,
-    error,
-    name,
-  }: {
-    label: string;
-    value: string;
-    options: CategoryOption[];
-    onSelect: (value: string) => void;
-    isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
-    refContainer: React.RefObject<HTMLDivElement>;
-    placeholder?: string;
-    required?: boolean;
-    error?: string;
-    name: keyof FormType;
-  }) => {
-    const selected = options.find(opt => opt.value === value);
-    const hasError = !!error && touched[name];
-
-    return (
-      <div className="space-y-2 relative" ref={refContainer}>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-          {label}
-          {required && <span className="text-red-400 ml-0.5">*</span>}
-        </label>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
-          aria-haspopup="listbox"
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
-            hasError
-              ? 'border-red-300 bg-red-50 ring-2 ring-red-100'
-              : isOpen
-                ? 'border-[#007AFF] bg-blue-50 ring-2 ring-blue-100'
-                : value
-                  ? 'border-emerald-200 bg-emerald-50/30'
-                  : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
-          }`}
-        >
-          <span className="flex items-center gap-3">
-            {selected && (
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selected.color }}
-              />
-            )}
-            <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-              {selected ? selected.label : placeholder}
-            </span>
-          </span>
-          <span className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
-        </button>
-
-        {isOpen && (
-          <div
-            className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
-            role="listbox"
-          >
-            <div className="max-h-56 overflow-y-auto py-1">
-              {options.map((opt) => {
-                const isSelected = opt.value === value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => onSelect(opt.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50 text-[#007AFF]'
-                        : 'text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: opt.color }}
-                    />
-                    <span className="flex-1 text-sm font-medium">{opt.label}</span>
-                    {isSelected && <Check className="w-4 h-4 text-[#007AFF] flex-shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {hasError && <ErrorMessage error={error} />}
-      </div>
-    );
-  };
-
-  const ToggleSwitch = ({
-    checked,
-    onChange,
-    label,
-    disabled = false
-  }: {
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-    label: string;
-    disabled?: boolean;
-  }) => (
-    <label className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-      disabled
-        ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
-        : checked
-          ? 'border-emerald-200 bg-emerald-50'
-          : 'border-slate-200 bg-white/80 backdrop-blur-sm hover:border-slate-300'
-    }`}>
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-        checked ? 'bg-[#007AFF]' : 'bg-slate-200'
-      } ${disabled ? 'opacity-50' : ''}`}>
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          disabled={disabled}
-          className="sr-only"
-        />
-        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
-          checked ? 'left-5' : 'left-0.5'
-        }`} />
-      </div>
-    </label>
-  );
-
-  const TextInput = ({
-    name,
-    value,
-    onChange,
-    onBlur,
-    placeholder,
-    required,
-    error,
-    type = 'text',
-    maxLength,
-    suffix,
-    helper,
-  }: {
-    name: keyof FormType;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onBlur?: () => void;
-    placeholder?: string;
-    required?: boolean;
-    error?: string;
-    type?: string;
-    maxLength?: number;
-    suffix?: string;
-    helper?: string;
-  }) => {
-    const hasError = !!error && touched[name];
-    const isValid = !hasError && touched[name] && value && value.trim().length > 0;
-
-    return (
-      <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} name={name} helper={helper}>
-        <div className="relative">
-          <input
-            name={name}
-            type={type}
-            value={value}
-            onChange={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            required={required}
-            maxLength={maxLength}
-            className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all ${
-              hasError
-                ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
-                : isValid
-                  ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
-                  : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
-            } ${suffix ? 'pr-12 text-right font-semibold' : ''}`}
-          />
-          {suffix && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{suffix}</span>
-          )}
-          {isValid && !suffix && (
-            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-          )}
-        </div>
-        {maxLength && (
-          <div className={`text-right text-[10px] transition-colors ${
-            value.length > maxLength * 0.9 ? 'text-amber-500 font-medium' : 'text-slate-400'
-          }`}>
-            {value.length}/{maxLength}
-          </div>
-        )}
-      </FieldWrapper>
-    );
-  };
-
-  const TextArea = ({
-    name,
-    value,
-    onChange,
-    onBlur,
-    placeholder,
-    required,
-    error,
-    rows = 4,
-    maxLength,
-    helper,
-  }: {
-    name: keyof FormType;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    onBlur?: () => void;
-    placeholder?: string;
-    required?: boolean;
-    error?: string;
-    rows?: number;
-    maxLength?: number;
-    helper?: string;
-  }) => {
-    const hasError = !!error && touched[name];
-    const isValid = !hasError && touched[name] && value && value.trim().length >= 20;
-
-    return (
-      <FieldWrapper label={name.charAt(0).toUpperCase() + name.slice(1)} required={required} error={error} name={name} helper={helper}>
-        <div className="relative">
-          <textarea
-            name={name}
-            value={value}
-            onChange={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            required={required}
-            rows={rows}
-            maxLength={maxLength}
-            className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none transition-all resize-none ${
-              hasError
-                ? 'border-red-300 bg-red-50 ring-2 ring-red-100 focus:border-red-400 focus:ring-red-200'
-                : isValid
-                  ? 'border-emerald-200 bg-emerald-50/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100'
-                  : 'border-slate-200 focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100'
-            }`}
-          />
-          {isValid && (
-            <Check className="absolute right-3 top-3 w-4 h-4 text-emerald-500" />
-          )}
-        </div>
-        {maxLength && (
-          <div className={`text-right text-[10px] transition-colors ${
-            value.length > maxLength * 0.9 ? 'text-red-500 font-medium' : value.length > maxLength * 0.8 ? 'text-amber-500 font-medium' : 'text-slate-400'
-          }`}>
-            {value.length}/{maxLength}
-          </div>
-        )}
-      </FieldWrapper>
-    );
-  };
-
+  // Render step content (inline to avoid closure over hooks)
   const renderStepInfos = () => (
     <div className="space-y-5 animate-step-in">
       <div className="flex items-center gap-2 mb-1">
@@ -759,6 +742,7 @@ useEffect(() => {
         placeholder="Ex: Électricien pro disponible pour dépannage"
         required
         error={errors.titre}
+        touched={!!touched.titre}
         maxLength={100}
         helper="Donnez un titre clair et attractif"
       />
@@ -771,6 +755,7 @@ useEffect(() => {
         placeholder="Décrivez votre service, tarifs, disponibilités..."
         required
         error={errors.description}
+        touched={!!touched.description}
         maxLength={500}
         helper="Minimum 20 caractères. Décrivez ce que vous proposez en détail."
       />
@@ -783,10 +768,11 @@ useEffect(() => {
           onSelect={(v) => handleSelect('categorie', v)}
           isOpen={openCategory}
           setIsOpen={setOpenCategory}
-          refContainer={categoryRef}
+          containerRef={categoryRef}
           placeholder="Choisir une catégorie"
           required
           error={errors.categorie}
+          touched={!!touched.categorie}
           name="categorie"
         />
         <CustomSelect
@@ -796,8 +782,9 @@ useEffect(() => {
           onSelect={(v) => handleSelect('type', v)}
           isOpen={openType}
           setIsOpen={setOpenType}
-          refContainer={typeRef}
+          containerRef={typeRef}
           placeholder="Type d'annonce"
+          touched={!!touched.type}
           name="type"
         />
       </div>
@@ -829,6 +816,7 @@ useEffect(() => {
                 estNegociable: checked ? false : prev.estNegociable,
                 montant: checked ? '' : prev.montant
               }));
+              setTouched(prev => ({ ...prev, montant: true }));
             }}
             label="Gratuit"
           />
@@ -842,13 +830,16 @@ useEffect(() => {
         {!form.estGratuit && (
           <div className="relative animate-fade-in">
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               name="montant"
               value={form.montant}
               onChange={handleChange}
+              onBlur={() => handleBlur('montant')}
               placeholder="0"
-              className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold"
-              min="0"
+              className={`w-full px-4 py-3 bg-white/80 border rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-blue-100 transition-all text-right pr-12 font-semibold ${
+                errors.montant && touched.montant ? 'border-red-300 bg-red-50 ring-2 ring-red-100' : 'border-slate-200'
+              }`}
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">XOF</span>
           </div>
@@ -858,7 +849,7 @@ useEffect(() => {
   );
 
   const renderStepPhotos = () => {
-    const filledCount = form.photos.filter(p => p && p.trim()).length;
+    const filledCount = form.photos.filter(p => p.url && p.url.trim()).length;
     return (
       <div className="space-y-5 animate-step-in">
         <div className="flex items-center gap-2 mb-1">
@@ -884,30 +875,30 @@ useEffect(() => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {form.photos.map((photo, i) => (
+          {form.photos.map((photo, idx) => (
             <div
-              key={i}
+              key={photo.id}
               className={`relative group rounded-2xl border-2 border-dashed transition-all duration-200 overflow-hidden ${
-                photo && photo.trim()
+                photo.url && photo.url.trim()
                   ? 'border-emerald-200 bg-emerald-50/30'
                   : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
               }`}
             >
               <div className="aspect-square">
                 <ImageUploader
-                  currentImage={photo || ''}
-                  onUpload={(url) => handlePhotoChange(i, url)}
+                  currentImage={photo.url || ''}
+                  onUpload={(url) => handlePhotoChange(idx, url)}
                 />
               </div>
-              {i === 0 && photo && photo.trim() && (
+              {idx === 0 && photo.url && photo.url.trim() && (
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#007AFF] text-white text-[10px] font-bold rounded-full">
-                  COVER
+                  COUVERTURE
                 </div>
               )}
               {form.photos.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => removePhotoField(i)}
+                  onClick={() => removePhotoField(idx)}
                   className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Supprimer"
                 >
@@ -930,7 +921,7 @@ useEffect(() => {
           <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700">
             La première photo sera utilisée comme image principale de votre annonce.
-            Des photos de qualité augmentent vos chances de contact de 3x.
+            Des photos de qualité augmentent vos chances de contact.
           </p>
         </div>
       </div>
@@ -951,6 +942,7 @@ useEffect(() => {
             value={form.pays}
             onChange={handleChange}
             placeholder="Bénin"
+            touched={!!touched.pays}
             helper="Pays où se trouve le service"
           />
           <TextInput
@@ -961,6 +953,7 @@ useEffect(() => {
             placeholder="Cotonou"
             required
             error={errors.ville}
+            touched={!!touched.ville}
             helper="Ville principale"
           />
         </div>
@@ -971,6 +964,7 @@ useEffect(() => {
             value={form.quartier}
             onChange={handleChange}
             placeholder="Akpakpa"
+            touched={!!touched.quartier}
             helper="Quartier précis"
           />
           <TextInput
@@ -978,6 +972,7 @@ useEffect(() => {
             value={form.details}
             onChange={handleChange}
             placeholder="À côté de la pharmacie..."
+            touched={!!touched.details}
             helper="Points de repère"
           />
         </div>
@@ -1014,7 +1009,7 @@ useEffect(() => {
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Photos</span>
-            <span className="text-slate-900 font-medium">{form.photos.filter(p => p && p.trim()).length} photo(s)</span>
+            <span className="text-slate-900 font-medium">{form.photos.filter(p => p.url && p.url.trim()).length} photo(s)</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Localisation</span>
@@ -1026,9 +1021,6 @@ useEffect(() => {
       </div>
     </div>
   );
-
-
-  // ===== RENDU PRINCIPAL =====
 
   const stepComponents = [renderStepInfos, renderStepPhotos, renderStepLocalisation];
 
@@ -1055,7 +1047,7 @@ useEffect(() => {
           <X className="w-5 h-5 text-slate-700" />
         </button>
 
-        <StepIndicator />
+        <StepIndicator currentStep={currentStep} onStepClick={goToStep} />
 
         <div
           ref={contentRef}
@@ -1147,6 +1139,5 @@ useEffect(() => {
     </div>
   );
 };
-
 
 export default Deposer;
