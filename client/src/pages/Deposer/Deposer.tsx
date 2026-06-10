@@ -522,8 +522,6 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       const categorieError = validateField('categorie', formData.categorie, formData.estGratuit);
       if (categorieError) { newErrors.categorie = categorieError; isValid = false; }
       
-      const villeError = validateField('ville', formData.ville, formData.estGratuit);
-      if (villeError) { newErrors.ville = villeError; isValid = false; }
     }
     
     if (stepIndex === 2) {
