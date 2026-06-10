@@ -598,7 +598,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     if (stepIndex > currentStep) {
       if (!validateStep(currentStep, form)) {
         const stepFields: Record<number, (keyof FormType)[]> = {
-          0: ['titre', 'description', 'categorie', 'ville'],
+          0: ['titre', 'description', 'categorie'],
           1: [],
           2: ['ville'],
         };
