@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
-import API from '../../api/axios';
+import API from '../../api/axios.ts';
 
 // ===== TYPES =====
 interface FormType {
