@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Annonce = require('../models/Annonce');
+const Avis = require('../models/Avis');
 
 // ─── Générer le token JWT ───
 const generateToken = (id) => {
@@ -163,4 +165,69 @@ const updateProfil = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfil, updateProfil };
+
+// ─── Changer le mot de passe ───
+// PUT /api/users/password
+const changePassword = async (req, res) => {
+  try {
+    const { ancienMotDePasse, nouveauMotDePasse, confirmation } = req.body;
+
+    // Validation simple
+    if (!ancienMotDePasse || !nouveauMotDePasse || !confirmation) {
+      return res.status(400).json({ message: 'Tous les champs sont obligatoires.' });
+    }
+    if (nouveauMotDePasse.length < 6) {
+      return res.status(400).json({ message: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' });
+    }
+    if (nouveauMotDePasse !== confirmation) {
+      return res.status(400).json({ message: 'Le nouveau mot de passe et la confirmation ne correspondent pas.' });
+    }
+
+    // Récupérer l'utilisateur (déjà injecté par le middleware auth)
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    // Vérifier l'ancien mot de passe
+    const isMatch = await bcrypt.compare(ancienMotDePasse, user.motDePasse);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Ancien mot de passe incorrect.' });
+    }
+
+    // Hasher le nouveau mot de passe
+    const salt = await bcrypt.genSalt(10);
+    user.motDePasse = await bcrypt.hash(nouveauMotDePasse, salt);
+    await user.save();
+
+    res.json({ message: 'Mot de passe modifié avec succès.' });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+// ─── Supprimer le compte ───
+// DELETE /api/users
+const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    // Supprimer également toutes ses annonces (optionnel mais recommandé)
+    await Annonce.deleteMany({ createur: req.user._id });
+    // Supprimer ses avis (s'il y en a)
+    await Avis.deleteMany({ auteur: req.user._id });
+    
+    await User.findByIdAndDelete(req.user._id);
+
+    res.json({ message: 'Compte supprimé avec succès.' });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+module.exports = { register, login, getProfil, updateProfil, deleteAccount, changePassword };
