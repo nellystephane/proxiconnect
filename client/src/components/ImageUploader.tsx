@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Image as ImageIcon, UploadCloud } from 'lucide-react';
-import { API_BASE_URL } from '../api/axios';
+import { API_BASE_URL } from '../api/axios.ts';
 
 interface ImageUploaderProps {
   currentImage?: string;
