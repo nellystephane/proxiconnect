@@ -66,4 +66,5 @@ export interface Offre {
   prix: number;
   duree: string;
   avantages: AbonnementStatut['avantages'];
+  avatar?: string; 
 }

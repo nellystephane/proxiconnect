@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
@@ -75,7 +75,7 @@ const StepIndicator = memo(({ currentStep, onStepClick }: { currentStep: number;
   <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-6 py-4">
     <div className="flex items-center justify-center gap-2">
       {STEPS.map((step, i) => {
-        const StepIcon = step.icon;
+      
         const isActive = i === currentStep;
         const isCompleted = i < currentStep;
 
@@ -141,7 +141,6 @@ const FieldWrapper = memo(({
   required,
   error,
   touched,
-  name,
   helper,
 }: {
   children: React.ReactNode;
@@ -178,7 +177,6 @@ const CustomSelect = memo(({
   required,
   error,
   touched,
-  name,
 }: {
   label: string;
   value: string;

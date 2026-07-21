@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MapPin, Users, Star, Shield, Zap, TrendingUp,
   ChevronRight, ArrowRight, Sparkles, Menu, X, CheckCircle2,
-  Quote, MessageCircle, HelpCircle, Search, Clock, Award
+  Quote, HelpCircle, Search, Clock, Award
 } from 'lucide-react';
 
 // ===== TYPES =====
@@ -256,7 +256,7 @@ const Accueil = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {categories.map((cat, i) => (
+            {categories.map((cat) => (
               <Link key={cat.name} to={`/annonces?categorie=${encodeURIComponent(cat.name)}`}
                 className="group relative flex flex-col items-center gap-3 rounded-2xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-sm transition-all duration-500 hover:border-blue-400/40 hover:bg-blue-50/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-2">
                 <div className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${cat.color} text-white shadow-md transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
