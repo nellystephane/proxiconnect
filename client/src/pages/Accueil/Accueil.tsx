@@ -59,9 +59,9 @@ const Accueil = () => {
   ];
 
   const testimonials: TestimonialType[] = [
-    { name: 'Amina K.', role: 'Coiffeuse à domicile', text: 'En 3 mois, j\'ai doublé ma clientèle. Fini les flyers jetés. ProxiConnect m\'apporte des clients qui savent exactement ce qu\'ils cherchent.', avatar: '👩🏾‍🦱', rating: 5 },
-    { name: 'Thomas L.', role: 'Plombier indépendant', text: 'La transparence des avis et la géolocalisation changent tout. Je ne perds plus de temps à prospecter. Les demandes arrivent directement dans mon quartier.', avatar: '👨🏻‍🔧', rating: 5 },
-    { name: 'Fatou D.', role: 'Cliente régulière', text: 'J\'ai trouvé un électricien fiable en 10 minutes. Le paiement sécurisé et les avis vérifiés m\'ont rassurée. Je recommande à tout mon voisinage.', avatar: '👩🏽‍💼', rating: 5 },
+    { name: 'Amina K.', role: 'Coiffeuse à domicile', text: 'En 3 mois, j\'ai doublé ma clientèle. Fini les flyers jetés. ProxiConnect m\'apporte des clients qui savent exactement ce qu\'ils cherchent.', rating: 5 },
+    { name: 'Thomas L.', role: 'Plombier indépendant', text: 'La transparence des avis et la géolocalisation changent tout. Je ne perds plus de temps à prospecter. Les demandes arrivent directement dans mon quartier.', rating: 5 },
+    { name: 'Fatou D.', role: 'Cliente régulière', text: 'J\'ai trouvé un électricien fiable en 10 minutes. Le paiement sécurisé et les avis vérifiés m\'ont rassurée. Je recommande à tout mon voisinage.', rating: 5 },
   ];
 
   const faqs: FAQType[] = [
@@ -336,7 +336,7 @@ const Accueil = () => {
             {testimonials.map((t, i) => (
               <div key={i} className="relative rounded-2xl border border-slate-200/60 bg-white/80 p-6 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl">{t.avatar}</div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-[#007AFF] font-bold text-sm">{t.name.charAt(0)}</div>
                   <div>
                     <p className="font-semibold text-slate-900">{t.name}</p>
                     <p className="text-xs text-slate-500">{t.role}</p>

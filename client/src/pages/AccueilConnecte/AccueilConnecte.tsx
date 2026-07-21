@@ -1,26 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import AnnonceCard from '../../components/AnnonceCard/AnnonceCard.tsx';
 import API from '../../api/axios.ts';
-import { Plus, Filter, ChevronDown, Sparkles, LayoutGrid, ArrowRight } from 'lucide-react';
-
-interface Annonce {
-  _id: string;
-  titre: string;
-  description: string;
-  categorie: string;
-  prix: { montant: number; estNegociable: boolean; estGratuit: boolean };
-  photos: string[];
-  localisation: { ville: string; quartier: string };
-  createur: { nom: string; prenom: string };
-  nombreVues: number;
-  createdAt: string;
-}
+import { Plus, Filter, ChevronDown, Sparkles, LayoutGrid, ArrowRight, X } from 'lucide-react';
+import type { Annonce } from '../../types';
 
 const AccueilConnecte = () => {
   const { user } = useAuth();
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
+  const [favoris, setFavoris] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Tout');
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
@@ -38,6 +27,21 @@ const AccueilConnecte = () => {
       }
     };
     fetchAnnonces();
+  }, []);
+
+  useEffect(() => {
+    API.get('/users/favoris')
+      .then(({ data }) => setFavoris(data.map((a: Annonce) => a._id)))
+      .catch(() => {});
+  }, []);
+
+  const toggleFavori = useCallback(async (annonceId: string) => {
+    try {
+      const { data } = await API.put(`/users/favoris/${annonceId}`);
+      setFavoris(data.favoris);
+    } catch {
+      // silencieux : action non critique
+    }
   }, []);
 
   // Extraction des catégories uniques
@@ -66,7 +70,7 @@ const AccueilConnecte = () => {
             <span>Espace membre</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-            Bonjour, <span className="text-[#007AFF]">{user?.prenom || 'Membre'}</span> 👋
+            Bonjour, <span className="text-[#007AFF]">{user?.prenom || 'Membre'}</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Explorez les annonces récentes dans votre zone.
@@ -140,7 +144,9 @@ const AccueilConnecte = () => {
         {activeCategory !== 'Tout' && (
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-xs font-medium text-[#007AFF] animate-fade-in">
             Filtre actif : {activeCategory}
-            <button onClick={() => setActiveCategory('Tout')} className="hover:text-red-500 transition-colors ml-1">✕</button>
+            <button onClick={() => setActiveCategory('Tout')} className="hover:text-red-500 transition-colors ml-1">
+              <X className="w-3 h-3" />
+            </button>
           </div>
         )}
       </section>
@@ -171,8 +177,14 @@ const AccueilConnecte = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {filteredAnnonces.map((annonce) => (
-              <AnnonceCard key={annonce._id} annonce={annonce} />
+              <AnnonceCard key={annonce._id} annonce={annonce} estFavori={favoris.includes(annonce._id)} onToggleFavori={toggleFavori} />
             ))}
+            <Link
+              to="/annonces"
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-[#007AFF] hover:underline py-2"
+            >
+              Voir toutes les annonces <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         )}
 

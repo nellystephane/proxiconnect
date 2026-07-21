@@ -44,6 +44,7 @@ const Inscription = () => {
     if (form.telephone.trim() && !/^\+229\s?\d{10}$/.test(form.telephone.trim())) {
       newErrors.telephone = 'Format: +229 01XXXXXXXX (10 chiffres)';
     }
+    if (!form.ville.trim()) newErrors.ville = 'La ville est obligatoire';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -201,7 +202,7 @@ const Inscription = () => {
             </div>
           
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville <span className="text-red-400">*</span></label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -213,6 +214,7 @@ const Inscription = () => {
                   placeholder="Cotonou"
                 />
               </div>
+              {errors.ville && <p className="text-red-500 text-xs mt-1">{errors.ville}</p>}
             </div>
 
             <button

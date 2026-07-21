@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
 import API from '../../api/axios.ts';
@@ -442,6 +442,8 @@ const TextArea = memo(({
 // ===== COMPOSANT PRINCIPAL =====
 const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const navigate = useNavigate();
+  const { id: annonceId } = useParams<{ id?: string }>();
+  const isEditMode = !!annonceId;
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -452,6 +454,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingAnnonce, setLoadingAnnonce] = useState(isEditMode);
   const [isClosing, setIsClosing] = useState(false);
   const [openCategory, setOpenCategory] = useState(false);
   const [openType, setOpenType] = useState(false);
@@ -473,6 +476,38 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     quartier: '',
     details: '',
   });
+
+  // En mode édition, charger l'annonce existante et préremplir le formulaire
+  useEffect(() => {
+    if (!isEditMode) return;
+    let annule = false;
+    (async () => {
+      try {
+        const { data } = await API.get(`/annonces/${annonceId}`);
+        if (annule) return;
+        setForm({
+          titre: data.titre || '',
+          description: data.description || '',
+          categorie: data.categorie || '',
+          sousCategorie: data.sousCategorie || '',
+          type: data.type || 'service',
+          montant: data.prix?.estGratuit ? '' : String(data.prix?.montant ?? ''),
+          estNegociable: data.prix?.estNegociable ?? false,
+          estGratuit: data.prix?.estGratuit ?? false,
+          photos: (data.photos || []).map((url: string) => ({ id: `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`, url })),
+          pays: data.localisation?.pays || 'Bénin',
+          ville: data.localisation?.ville || '',
+          quartier: data.localisation?.quartier || '',
+          details: data.localisation?.details || '',
+        });
+      } catch (err) {
+        setGlobalError("Impossible de charger cette annonce pour modification.");
+      } finally {
+        if (!annule) setLoadingAnnonce(false);
+      }
+    })();
+    return () => { annule = true; };
+  }, [annonceId, isEditMode]);
 
   // Helper: generate unique id for photo items
   const generatePhotoId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
@@ -688,13 +723,17 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
     };
 
     try {
-      await API.post('/annonces', payload);
+      if (isEditMode) {
+        await API.put(`/annonces/${annonceId}`, payload);
+      } else {
+        await API.post('/annonces', payload);
+      }
       handleClose();
     } catch (err: any) {
-      setGlobalError(err.response?.data?.message || "Erreur lors de la création de l'annonce.");
+      setGlobalError(err.response?.data?.message || "Erreur lors de l'enregistrement de l'annonce.");
       setLoading(false);
     }
-  }, [form, validateAllSteps, handleClose]);
+  }, [form, validateAllSteps, handleClose, isEditMode, annonceId]);
 
   // Click outside and escape
   useEffect(() => {
@@ -1039,6 +1078,13 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
           <X className="w-5 h-5 text-slate-700" />
         </button>
 
+        {loadingAnnonce ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">Chargement de votre annonce…</p>
+          </div>
+        ) : (
+        <>
         <StepIndicator currentStep={currentStep} onStepClick={goToStep} />
 
         <div
@@ -1089,7 +1135,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        Publier l'annonce
+                        {isEditMode ? 'Enregistrer les modifications' : "Publier l'annonce"}
                       </>
                     )}
                   </span>
@@ -1099,6 +1145,8 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
             </div>
           </form>
         </div>
+        </>
+        )}
       </div>
 
       <style>{`
