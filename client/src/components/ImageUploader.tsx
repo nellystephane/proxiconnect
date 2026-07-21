@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Image as ImageIcon, UploadCloud } from 'lucide-react';
+import { API_BASE_URL } from '../api/axios';
 
 interface ImageUploaderProps {
   currentImage?: string;
@@ -21,7 +22,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://proxiconnect.onrender.com/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -30,7 +31,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Upload failed');
-      onUpload('https://proxiconnect.onrender.com' + data.url);
+      onUpload(`${API_BASE_URL}${data.url}`);
     }  catch (err: any) {
         console.error('Upload error:', err);
         let message = 'Erreur inconnue';
@@ -39,6 +40,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
           message = `Erreur ${err.response.status}: ${err.response.data?.message || 'inconnue'}`;
         }
         alert(`Erreur lors de l'upload : ${message}`);
+      } finally {
+        setUploading(false);
       }
   };
 

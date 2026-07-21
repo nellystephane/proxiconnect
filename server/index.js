@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const uploadRoutes = require('./routes/uploadRoutes');
 const connectDB = require('./config/db');
@@ -15,10 +17,16 @@ const paiementRoutes = require('./routes/paiementRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ─── Dossier d'upload : créé automatiquement s'il n'existe pas ───
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // ─── Middleware ───
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 // ─── Routes ───
 app.use('/api/users', userRoutes);

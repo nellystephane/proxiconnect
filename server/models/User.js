@@ -51,7 +51,11 @@ const userSchema = new mongoose.Schema({
   estVerifie: {
     type: Boolean,
     default: false
-  }
+  },
+  favoris: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Annonce'
+  }]
 }, {
   timestamps: true
 });

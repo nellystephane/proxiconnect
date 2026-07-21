@@ -66,7 +66,7 @@ const annonceSchema = new mongoose.Schema({
     type: [String],
     validate: [arrayLimit, 'Maximum 6 photos autorisées']
   },
-  video: {
+  video_annonce: {
     type: String,
     default: null
   },

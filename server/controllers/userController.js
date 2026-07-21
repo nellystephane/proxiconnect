@@ -230,4 +230,52 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfil, updateProfil, deleteAccount, changePassword };
+// ─── Ajouter/retirer une annonce des favoris ───
+// PUT /api/users/favoris/:annonceId
+const toggleFavori = async (req, res) => {
+  try {
+    const { annonceId } = req.params;
+    const Annonce = require('../models/Annonce');
+
+    const annonceExiste = await Annonce.exists({ _id: annonceId });
+    if (!annonceExiste) {
+      return res.status(404).json({ message: 'Annonce non trouvée.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    const dejaFavori = user.favoris.some(id => id.toString() === annonceId);
+
+    if (dejaFavori) {
+      user.favoris = user.favoris.filter(id => id.toString() !== annonceId);
+    } else {
+      user.favoris.push(annonceId);
+    }
+
+    await user.save();
+    res.json({ favoris: user.favoris, estFavori: !dejaFavori });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+// ─── Liste des annonces favorites de l'utilisateur connecté ───
+// GET /api/users/favoris
+const getFavoris = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'favoris',
+      populate: { path: 'createur', select: 'nom prenom photo telephone' }
+    });
+
+    res.json(user.favoris);
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+module.exports = {
+  register, login, getProfil, updateProfil, deleteAccount, changePassword,
+  toggleFavori, getFavoris
+};

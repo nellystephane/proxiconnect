@@ -30,6 +30,17 @@ const PRIX = {
   abonnement_annuel: 15000  // 15000 XOF (attractif)
 };
 
+// ─── Liste des offres disponibles ───
+// GET /api/paiements/offres
+const getOffres = async (req, res) => {
+  res.json([
+    { type: 'gratuit', label: 'Gratuit', prix: 0, duree: 'Illimitée', avantages: { nombreAnnonces: 1, videoAutorisee: false, miseEnAvant: false, dureeAnnonce: 15 } },
+    { type: 'abonnement_30j', label: '30 jours', prix: PRIX.abonnement_30j, duree: '30 jours', avantages: AVANTAGES.abonnement_30j },
+    { type: 'abonnement_90j', label: '90 jours', prix: PRIX.abonnement_90j, duree: '90 jours', avantages: AVANTAGES.abonnement_90j },
+    { type: 'abonnement_annuel', label: 'Annuel', prix: PRIX.abonnement_annuel, duree: '360 jours', avantages: AVANTAGES.abonnement_annuel }
+  ]);
+};
+
 // ─── Créer un paiement (initier un abonnement) ───
 // POST /api/paiements
 const createPaiement = async (req, res) => {
@@ -146,10 +157,19 @@ const getHistorique = async (req, res) => {
   }
 };
 
-// ─── Confirmer un paiement (admin ou webhook) ───
+// ─── Confirmer un paiement (webhook opérateur Mobile Money) ───
 // PUT /api/paiements/:id/confirmer
+// ⚠️ Cette route est destinée au webhook du fournisseur Mobile Money, pas à
+// un utilisateur final : elle est protégée par une clé secrète partagée
+// (WEBHOOK_SECRET) en plus de l'authentification, pour éviter qu'un membre
+// puisse confirmer un paiement (le sien ou celui d'un tiers) sans paiement réel.
 const confirmerPaiement = async (req, res) => {
   try {
+    const secretAttendu = process.env.WEBHOOK_SECRET;
+    if (!secretAttendu || req.headers['x-webhook-secret'] !== secretAttendu) {
+      return res.status(403).json({ message: 'Accès refusé.' });
+    }
+
     const paiement = await Paiement.findById(req.params.id);
 
     if (!paiement) {
@@ -179,11 +199,58 @@ const confirmerPaiement = async (req, res) => {
   }
 };
 
+// ─── Confirmation en mode démonstration ───
+// PUT /api/paiements/:id/simuler
+// ⚠️ Provisoire : en attendant l'intégration réelle des webhooks Mobile Money
+// (Orange, MTN, Moov, Wave, Celtiis), cette route permet à l'utilisateur de
+// confirmer lui-même son paiement afin de tester le parcours d'abonnement.
+// À retirer/sécuriser dès qu'un vrai fournisseur de paiement est branché :
+// la confirmation devra alors provenir uniquement du webhook de l'opérateur.
+const simulerConfirmation = async (req, res) => {
+  try {
+    const paiement = await Paiement.findById(req.params.id);
+
+    if (!paiement) {
+      return res.status(404).json({ message: 'Paiement non trouvé.' });
+    }
+
+    if (paiement.utilisateur.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Ce paiement ne vous appartient pas.' });
+    }
+
+    if (paiement.statut === 'confirmé') {
+      return res.json({ message: 'Ce paiement est déjà confirmé.', paiement });
+    }
+
+    paiement.statut = 'confirmé';
+    await paiement.save();
+
+    if (paiement.avantages.miseEnAvant) {
+      await Annonce.updateMany(
+        { createur: paiement.utilisateur, statut: 'actif' },
+        { estMiseEnAvant: true }
+      );
+    }
+
+    await Annonce.updateMany(
+      { createur: paiement.utilisateur, statut: 'actif' },
+      { estPremium: true }
+    );
+
+    res.json({ message: 'Paiement confirmé avec succès.', paiement });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
 module.exports = {
   createPaiement,
   getStatutAbonnement,
   getHistorique,
   confirmerPaiement,
+  simulerConfirmation,
+  getOffres,
   PRIX,
   AVANTAGES
 };
