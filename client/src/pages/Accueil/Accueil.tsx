@@ -47,7 +47,8 @@ const Accueil = () => {
   ];
 
   const steps: StepType[] = [
-    { step: '01', icon: Users, title: 'Inscrivez-vous en 30 secondes', desc: 'Aucune carte bancaire requise. Créez votre profil, validez votre identité et accédez instantanément à un réseau de professionnels et de clients dans votre quartier.', gradient: 'from-blue-500 to-indigo-600' },    { step: '02', icon: Sparkles, title: 'Publiez votre annonce en 3 clics', desc: 'Ajoutez photos, tarifs, disponibilités et zone d\'intervention. Notre système de géolocalisation intelligente diffuse votre offre directement aux habitants à moins de 5 km.', gradient: 'from-indigo-500 to-purple-600' },
+    { step: '01', icon: Users, title: 'Inscrivez-vous en 30 secondes', desc: 'Aucune carte bancaire requise. Créez votre profil, validez votre identité et accédez instantanément à un réseau de professionnels et de clients dans votre quartier.', gradient: 'from-blue-500 to-indigo-600' },
+    { step: '02', icon: Sparkles, title: 'Publiez votre annonce en 3 clics', desc: 'Ajoutez photos, tarifs, disponibilités et zone d\'intervention. Notre système de géolocalisation intelligente diffuse votre offre directement aux habitants à moins de 5 km.', gradient: 'from-indigo-500 to-purple-600' },
     { step: '03', icon: Zap, title: 'Recevez des demandes qualifiées', desc: 'Discutez en temps réel via notre messagerie intégrée, planifiez des rendez-vous et développez votre activité sans intermédiaire, sans commission cachée, sans algorithme opaque.', gradient: 'from-purple-500 to-pink-600' },
   ];
 
@@ -58,10 +59,29 @@ const Accueil = () => {
     { icon: Award, title: 'Économie circulaire & solidaire', desc: 'En consommant local, vous réduisez votre empreinte carbone, soutenez l\'emploi de proximité et participez activement à la vitalité économique de votre commune.' },
   ];
 
+  // ✅ CORRECTION : Ajout de la propriété 'avatar' à chaque témoignage
   const testimonials: TestimonialType[] = [
-    { name: 'Amina K.', role: 'Coiffeuse à domicile', text: 'En 3 mois, j\'ai doublé ma clientèle. Fini les flyers jetés. ProxiConnect m\'apporte des clients qui savent exactement ce qu\'ils cherchent.', rating: 5 },
-    { name: 'Thomas L.', role: 'Plombier indépendant', text: 'La transparence des avis et la géolocalisation changent tout. Je ne perds plus de temps à prospecter. Les demandes arrivent directement dans mon quartier.', rating: 5 },
-    { name: 'Fatou D.', role: 'Cliente régulière', text: 'J\'ai trouvé un électricien fiable en 10 minutes. Le paiement sécurisé et les avis vérifiés m\'ont rassurée. Je recommande à tout mon voisinage.', rating: 5 },
+    { 
+      name: 'Amina K.', 
+      role: 'Coiffeuse à domicile', 
+      text: 'En 3 mois, j\'ai doublé ma clientèle. Fini les flyers jetés. ProxiConnect m\'apporte des clients qui savent exactement ce qu\'ils cherchent.', 
+      rating: 5,
+      avatar: 'https://ui-avatars.com/api/?name=Amina+K&background=3B82F6&color=fff&size=100' // ✅ AJOUTÉ
+    },
+    { 
+      name: 'Thomas L.', 
+      role: 'Plombier indépendant', 
+      text: 'La transparence des avis et la géolocalisation changent tout. Je ne perds plus de temps à prospecter. Les demandes arrivent directement dans mon quartier.', 
+      rating: 5,
+      avatar: 'https://ui-avatars.com/api/?name=Thomas+L&background=3B82F6&color=fff&size=100' // ✅ AJOUTÉ
+    },
+    { 
+      name: 'Fatou D.', 
+      role: 'Cliente régulière', 
+      text: 'J\'ai trouvé un électricien fiable en 10 minutes. Le paiement sécurisé et les avis vérifiés m\'ont rassurée. Je recommande à tout mon voisinage.', 
+      rating: 5,
+      avatar: 'https://ui-avatars.com/api/?name=Fatou+D&background=3B82F6&color=fff&size=100' // ✅ AJOUTÉ
+    },
   ];
 
   const faqs: FAQType[] = [
@@ -96,7 +116,8 @@ const Accueil = () => {
 
   // Auto-scroll carousel
   useEffect(() => {
-    if (!carouselRef.current) return;    const carousel = carouselRef.current;
+    if (!carouselRef.current) return;
+    const carousel = carouselRef.current;
     const scrollSpeed = 0.4;
     let animationFrameId: number;
     const scroll = () => {
@@ -145,7 +166,8 @@ const Accueil = () => {
   const toggleFaq = (index: number) => setOpenFaq(openFaq === index ? null : index);
 
   // ===== RENDER =====
-  return (    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+  return (
+    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       
       {/* ===== BACKGROUND LUMIÈRE & TEXTURE ===== */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -194,7 +216,8 @@ const Accueil = () => {
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm transition-colors hover:border-blue-300 hover:bg-blue-50" aria-label="Menu mobile">
               {mobileMenuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
             </button>
-          </div>        </div>
+          </div>
+        </div>
 
         {/* Mobile Dropdown */}
         <div className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -243,7 +266,8 @@ const Accueil = () => {
             <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> 0 commission cachée</div>
             <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Profils vérifiés & modérés</div>
             <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Support réactif 7j/7</div>
-          </div>        </section>
+          </div>
+        </section>
 
         {/* ========== ANNONCES / CATÉGORIES ========== */}
         <section id="annonces" ref={(el) => sectionsRef.current[1] = el as HTMLDivElement} className="animate-on-scroll space-y-12">
@@ -292,7 +316,8 @@ const Accueil = () => {
                 <div className="absolute top-8 left-8 text-6xl font-black text-slate-100 select-none pointer-events-none">{step.step}</div>
                 <h3 className="relative text-lg font-bold text-slate-900 mb-3">{step.title}</h3>
                 <p className="relative text-sm text-slate-600 leading-relaxed">{step.desc}</p>
-              </div>            ))}
+              </div>
+            ))}
           </div>
         </section>
 
@@ -336,12 +361,20 @@ const Accueil = () => {
             {testimonials.map((t, i) => (
               <div key={i} className="relative rounded-2xl border border-slate-200/60 bg-white/80 p-6 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-[#007AFF] font-bold text-sm">{t.name.charAt(0)}</div>
+                  {/* ✅ Utilisation de l'avatar ou de l'initiale si l'avatar est absent */}
+                  {t.avatar ? (
+                    <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-[#007AFF] font-bold text-sm">
+                      {t.name.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold text-slate-900">{t.name}</p>
                     <p className="text-xs text-slate-500">{t.role}</p>
                   </div>
-                </div>                <div className="flex gap-1 mb-3 text-amber-400">
+                </div>
+                <div className="flex gap-1 mb-3 text-amber-400">
                   {[...Array(t.rating)].map((_, idx) => <Star key={idx} className="w-4 h-4 fill-current" />)}
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed">"{t.text}"</p>
@@ -390,7 +423,8 @@ const Accueil = () => {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{stat.label}</p>
                 </div>
               ))}
-            </div>          </div>
+            </div>
+          </div>
         </section>
 
         {/* ========== CTA FINAL ========== */}
@@ -439,7 +473,8 @@ const Accueil = () => {
               </div>
             </div>
             
-            <div>              <h4 className="text-sm font-semibold text-slate-900 mb-4">Navigation</h4>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-4">Navigation</h4>
               <ul className="space-y-3 text-sm text-slate-500">
                 <li><a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="hover:text-[#007AFF] transition-colors">Annonces</a></li>
                 <li><a href="#apropos" onClick={(e) => handleNavClick(e, '#apropos')} className="hover:text-[#007AFF] transition-colors">À propos</a></li>
@@ -488,7 +523,8 @@ const Accueil = () => {
             50% { opacity: 0.5; transform: scale(1.08); }
           }
           .animate-float-delayed { animation: floatDelayed 12s ease-in-out infinite; }
-          @keyframes floatDelayed {            0%, 100% { transform: translate(0, 0) scale(1); }
+          @keyframes floatDelayed {
+            0%, 100% { transform: translate(0, 0) scale(1); }
             50% { transform: translate(-15px, 12px) scale(1.05); }
           }
           .animate-float-slow { animation: floatSlow 10s ease-in-out infinite; }
