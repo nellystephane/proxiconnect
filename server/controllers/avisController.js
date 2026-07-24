@@ -63,7 +63,8 @@ const createAvis = async (req, res) => {
 // GET /api/avis/utilisateur/:id
 const getAvisByUser = async (req, res) => {
   try {
-    const { page = 1, limite = 20 } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limite = Math.min(50, Math.max(1, parseInt(req.query.limite) || 20));
     const skip = (page - 1) * limite;
 
     const avis = await Avis.find({
@@ -74,7 +75,7 @@ const getAvisByUser = async (req, res) => {
       .populate('annonce', 'titre')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limite));
+      .limit(limite);
 
     // Calculer la moyenne
     const stats = await Avis.aggregate([
@@ -88,7 +89,7 @@ const getAvisByUser = async (req, res) => {
     res.json({
       avis,
       stats: { moyenne, total },
-      page: parseInt(page),
+      page,
       pages: Math.ceil(total / limite)
     });
 
@@ -123,6 +124,12 @@ const signalerAvis = async (req, res) => {
       return res.status(404).json({ message: 'Avis non trouvé.' });
     }
 
+    const aDejaSignale = avis.signalePar.some(id => id.toString() === req.user._id.toString());
+    if (aDejaSignale) {
+      return res.status(400).json({ message: 'Vous avez déjà signalé cet avis.' });
+    }
+
+    avis.signalePar.push(req.user._id);
     avis.signalements += 1;
 
     // Si trop de signalements, masquer automatiquement

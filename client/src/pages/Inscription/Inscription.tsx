@@ -101,7 +101,7 @@ const Inscription = () => {
           Retour à l'accueil
         </Link>
 
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-gray-200/60">
+        <div className="glass-solid rounded-3xl p-8 shadow-xl">
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 rounded-full px-4 py-1 text-xs font-medium mb-4">
               <Sparkles className="w-3.5 h-3.5" />

@@ -63,13 +63,13 @@ const AccueilConnecte = () => {
     <div className="relative min-h-screen pb-24 pt-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 animate-fade-in">
       
       {/* ========== HEADER COMPACT ========== */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/60 dark:border-slate-700/50">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/60">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium text-[#007AFF] mb-1">
             <Sparkles className="w-4 h-4" />
             <span>Espace membre</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
             Bonjour, <span className="text-[#007AFF]">{user?.prenom || 'Membre'}</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -96,7 +96,7 @@ const AccueilConnecte = () => {
               className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                 activeCategory === cat
                   ? 'bg-[#007AFF] text-white shadow-md shadow-blue-500/25 scale-105'
-                  : 'bg-white/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/50 hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-slate-700/50'
+                  : 'glass-light text-slate-600 hover:border-blue-400/50 hover:bg-blue-50/50'
               }`}
             >
               {cat}
@@ -108,8 +108,8 @@ const AccueilConnecte = () => {
                 onClick={() => setShowMoreDropdown(!showMoreDropdown)}
                 className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium border transition-all duration-300 ${
                   showMoreDropdown
-                    ? 'border-[#007AFF] text-[#007AFF] bg-blue-50/50 dark:bg-blue-900/20'
-                    : 'border-slate-200/60 dark:border-slate-700/50 text-slate-500 hover:border-blue-400/50'
+                    ? 'border-[#007AFF] text-[#007AFF] bg-blue-50/50'
+                    : 'border-slate-200/60 text-slate-500 hover:border-blue-400/50'
                 }`}
               >
                 <Filter className="w-3.5 h-3.5" />
@@ -119,7 +119,7 @@ const AccueilConnecte = () => {
 
               {/* Dropdown */}
               <div
-                className={`absolute top-full left-0 mt-2 w-44 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-50 p-1 transition-all duration-300 origin-top ${
+                className={`glass-solid absolute top-full left-0 mt-2 w-44 rounded-xl shadow-xl z-50 p-1 transition-all duration-300 origin-top ${
                   showMoreDropdown ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'
                 }`}
               >
@@ -130,7 +130,7 @@ const AccueilConnecte = () => {
                       setActiveCategory(cat);
                       setShowMoreDropdown(false);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-[#007AFF] transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-blue-50 hover:text-[#007AFF] transition-colors"
                   >
                     {cat}
                   </button>
@@ -142,7 +142,7 @@ const AccueilConnecte = () => {
         
         {/* Active filter badge */}
         {activeCategory !== 'Tout' && (
-          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-xs font-medium text-[#007AFF] animate-fade-in">
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-xs font-medium text-[#007AFF] animate-fade-in">
             Filtre actif : {activeCategory}
             <button onClick={() => setActiveCategory('Tout')} className="hover:text-red-500 transition-colors ml-1">
               <X className="w-3 h-3" />
@@ -157,7 +157,7 @@ const AccueilConnecte = () => {
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-slate-200/60 bg-white/60 p-4 animate-pulse h-40 backdrop-blur-sm"
+                className="glass-light rounded-2xl p-4 animate-pulse h-40"
               />
             ))}
           </div>

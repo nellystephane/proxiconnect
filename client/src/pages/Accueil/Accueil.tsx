@@ -184,7 +184,7 @@ const Accueil = () => {
       </div>
 
       {/* ===== HEADER ADAPTATIF ===== */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrollY > 40 ? 'bg-white/85 backdrop-blur-xl border-b border-slate-200/60 shadow-sm shadow-slate-200/30' : 'bg-transparent border-transparent'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrollY > 40 ? 'glass-nav shadow-sm shadow-slate-200/30' : 'bg-transparent border-transparent'}`}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group" onClick={(e) => handleNavClick(e, '#hero')}>
@@ -213,7 +213,7 @@ const Accueil = () => {
             </div>
 
             {/* Mobile Menu Toggle */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm transition-colors hover:border-blue-300 hover:bg-blue-50" aria-label="Menu mobile">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="glass-light lg:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:border-blue-300 hover:bg-blue-50" aria-label="Menu mobile">
               {mobileMenuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
             </button>
           </div>
@@ -221,7 +221,7 @@ const Accueil = () => {
 
         {/* Mobile Dropdown */}
         <div className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="mx-4 mb-4 rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl p-4 shadow-lg shadow-slate-200/40 space-y-1">
+          <div className="glass-solid mx-4 mb-4 rounded-2xl p-4 shadow-lg shadow-slate-200/40 space-y-1">
             {navLinks.map((link) => (
               <a key={link.label} href={link.href} onClick={(e) => handleNavClick(e, link.href)} className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-[#007AFF] transition-colors">{link.label}</a>
             ))}
@@ -238,7 +238,7 @@ const Accueil = () => {
         
         {/* ========== HERO ========== */}
         <section id="hero" ref={(el) => sectionsRef.current[0] = el as HTMLDivElement} className="flex flex-col items-center space-y-10 text-center animate-on-scroll">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/60 bg-white/80 px-5 py-2 text-sm font-semibold text-slate-700 backdrop-blur-md shadow-sm">
+          <div className="glass-pill inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm">
             <Sparkles className="w-4 h-4 text-[#007AFF] animate-spin-slow" />
             <span>La plateforme locale de confiance qui relie talents & voisins</span>
           </div>
@@ -257,7 +257,7 @@ const Accueil = () => {
               <ArrowRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </Link>
-            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="group inline-flex items-center justify-center gap-2 rounded-full border border-slate-200/60 bg-white/80 px-8 py-4 text-base font-semibold text-slate-700 backdrop-blur-md transition-all duration-500 hover:border-blue-400/50 hover:bg-blue-50/60 hover:text-[#007AFF] hover:-translate-y-1 active:translate-y-0">
+            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="glass-pill group inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-slate-700 transition-all duration-500 hover:border-blue-400/50 hover:bg-blue-50/60 hover:text-[#007AFF] hover:-translate-y-1 active:translate-y-0">
               Explorer les annonces <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </a>
           </div>
@@ -282,7 +282,7 @@ const Accueil = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
             {categories.map((cat) => (
               <Link key={cat.name} to={`/annonces?categorie=${encodeURIComponent(cat.name)}`}
-                className="group relative flex flex-col items-center gap-3 rounded-2xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-sm transition-all duration-500 hover:border-blue-400/40 hover:bg-blue-50/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-2">
+                className="glass group relative flex flex-col items-center gap-3 rounded-2xl p-6 transition-all duration-500 hover:border-blue-400/40 hover:bg-blue-50/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-2">
                 <div className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${cat.color} text-white shadow-md transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
                   <cat.icon className="w-7 h-7" />
                 </div>
@@ -309,7 +309,7 @@ const Accueil = () => {
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="hidden md:block absolute top-20 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
             {steps.map((step, i) => (
-              <div key={i} className="relative rounded-3xl p-8 border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-3 hover:border-blue-300/40">
+              <div key={i} className="glass relative rounded-3xl p-8 shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-3 hover:border-blue-300/40">
                 <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${step.gradient} text-white shadow-lg shadow-blue-500/20 transition-transform duration-500 hover:scale-110`}>
                   <step.icon className="w-7 h-7" />
                 </div>
@@ -335,7 +335,7 @@ const Accueil = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {features.map((feat, i) => (
-              <div key={i} className="group flex items-start gap-5 rounded-2xl border border-slate-200/60 bg-white/70 p-7 backdrop-blur-sm transition-all duration-500 hover:border-blue-400/40 hover:shadow-lg hover:-translate-y-2">
+              <div key={i} className="glass group flex items-start gap-5 rounded-2xl p-7 transition-all duration-500 hover:border-blue-400/40 hover:shadow-lg hover:-translate-y-2">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#007AFF] transition-all duration-500 group-hover:bg-[#007AFF] group-hover:text-white">
                   <feat.icon className="w-7 h-7" />
                 </div>
@@ -359,7 +359,7 @@ const Accueil = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
-              <div key={i} className="relative rounded-2xl border border-slate-200/60 bg-white/80 p-6 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300">
+              <div key={i} className="glass-pill relative rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
                 <div className="flex items-center gap-4 mb-4">
                   {/* ✅ Utilisation de l'avatar ou de l'initiale si l'avatar est absent */}
                   {t.avatar ? (
@@ -394,7 +394,7 @@ const Accueil = () => {
 
           <div className="space-y-3">
             {faqs.map((faq, i) => (
-              <div key={i} className="rounded-2xl border border-slate-200/60 bg-white/70 overflow-hidden transition-all duration-300 hover:border-blue-300/40">
+              <div key={i} className="glass rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300/40">
                 <button onClick={() => toggleFaq(i)} className="w-full flex items-center justify-between p-5 text-left focus:outline-none">
                   <span className="font-semibold text-slate-900 pr-4">{faq.q}</span>
                   <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openFaq === i ? 'rotate-90 text-[#007AFF]' : ''}`} />
@@ -442,7 +442,7 @@ const Accueil = () => {
                 <Link to="/inscription" className="group inline-flex items-center gap-2 rounded-full bg-[#007AFF] px-10 py-4 text-base font-semibold text-white shadow-xl shadow-blue-500/25 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0">
                   Créer un compte gratuit <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
-                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="inline-flex items-center gap-2 rounded-full border border-slate-300/60 bg-white/80 px-8 py-4 text-base font-semibold text-slate-700 backdrop-blur-md transition-all duration-500 hover:border-blue-400/50 hover:text-[#007AFF]">
+                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="glass-pill inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-slate-700 transition-all duration-500 hover:border-blue-400/50 hover:text-[#007AFF]">
                   Voir comment ça marche
                 </a>
               </div>
@@ -453,7 +453,7 @@ const Accueil = () => {
       </main>
 
       {/* ===== FOOTER ===== */}
-      <footer className="border-t border-slate-200/60 bg-white/80 backdrop-blur-xl mt-16">
+      <footer className="glass-nav border-t mt-16">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             <div className="md:col-span-2 space-y-4">

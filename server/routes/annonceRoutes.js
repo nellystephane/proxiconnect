@@ -9,6 +9,7 @@ const {
   getMesAnnonces
 } = require('../controllers/annonceController');
 const auth = require('../middleware/auth');
+const { authOptionnel } = require('../middleware/auth');
 
 
 // ─── Routes protégées ───
@@ -20,7 +21,7 @@ router.get('/mes-annonces', auth, getMesAnnonces);
 
 // ─── Routes publiques ───
 router.get('/', getAnnonces);
-router.get('/:id', getAnnonceById);
+router.get('/:id', authOptionnel, getAnnonceById);
 
 
 

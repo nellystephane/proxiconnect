@@ -2,6 +2,14 @@ const Annonce = require('../models/Annonce');
 const User = require('../models/User');
 const { getAvantagesActifs } = require('../utils/abonnement');
 
+// ─── Normalise page/limite pour éviter des valeurs invalides ou abusives ───
+// (ex: ?limite=999999 forcerait un scan massif de la collection)
+const normaliserPagination = (page, limite) => {
+  const pageNormalisee = Math.max(1, parseInt(page) || 1);
+  const limiteNormalisee = Math.min(50, Math.max(1, parseInt(limite) || 20));
+  return { page: pageNormalisee, limite: limiteNormalisee };
+};
+
 // ─── Marquer comme expirées les annonces dont la date est dépassée ───
 // Appelé au fil de l'eau (pas de tâche planifiée nécessaire pour ce volume)
 const marquerAnnoncesExpirees = async (filtre = {}) => {
@@ -83,7 +91,8 @@ const createAnnonce = async (req, res) => {
 // GET /api/annonces
 const getAnnonces = async (req, res) => {
   try {
-    const { categorie, ville, type, q, page = 1, limite = 20 } = req.query;
+    const { categorie, ville, type, q } = req.query;
+    const { page, limite } = normaliserPagination(req.query.page, req.query.limite);
 
     await marquerAnnoncesExpirees();
 
@@ -100,13 +109,13 @@ const getAnnonces = async (req, res) => {
       .populate('createur', 'nom prenom photo telephone')
       .sort({ estMiseEnAvant: -1, createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limite));
+      .limit(limite);
 
     const total = await Annonce.countDocuments(filtre);
 
     res.json({
       annonces,
-      page: parseInt(page),
+      page,
       pages: Math.ceil(total / limite),
       total
     });
@@ -127,9 +136,15 @@ const getAnnonceById = async (req, res) => {
       return res.status(404).json({ message: 'Annonce non trouvée.' });
     }
 
-    // Incrémenter le compteur de vues
-    annonce.nombreVues += 1;
-    await annonce.save();
+    // Incrémenter le compteur de vues, sauf quand le créateur consulte sa
+    // propre annonce (ça ne devrait pas gonfler ses propres stats).
+    // req.user est optionnel ici : cette route est publique, l'utilisateur
+    // n'est identifié que s'il a fourni un token valide (voir routes).
+    const estLeCreateur = req.user && annonce.createur._id.toString() === req.user._id.toString();
+    if (!estLeCreateur) {
+      annonce.nombreVues += 1;
+      await annonce.save();
+    }
 
     res.json(annonce);
 

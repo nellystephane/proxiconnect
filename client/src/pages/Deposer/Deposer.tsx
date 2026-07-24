@@ -72,7 +72,7 @@ interface DeposerProps {
 
 // ===== COMPOSANTS EXTERNES (memorisés) =====
 const StepIndicator = memo(({ currentStep, onStepClick }: { currentStep: number; onStepClick: (index: number) => void }) => (
-  <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-6 py-4">
+  <div className="glass-nav sticky top-0 z-20 px-6 py-4">
     <div className="flex items-center justify-center gap-2">
       {STEPS.map((step, i) => {
       
@@ -235,7 +235,7 @@ const CustomSelect = memo(({
 
       {isOpen && (
         <div
-          className="absolute z-50 w-full mt-2 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+          className="glass-solid absolute z-50 w-full mt-2 rounded-xl shadow-xl overflow-hidden"
           role="listbox"
         >
           <div className="max-h-56 overflow-y-auto py-1">
@@ -833,7 +833,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         </div>
       )}
 
-      <div className="space-y-4 p-5 rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm">
+      <div className="glass-light space-y-4 p-5 rounded-2xl">
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarification</label>
         <div className="flex flex-wrap gap-3">
           <ToggleSwitch
@@ -928,7 +928,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
                 <button
                   type="button"
                   onClick={() => removePhotoField(idx)}
-                  className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  className="glass-control absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Supprimer"
                 >
                   <Minus className="w-3.5 h-3.5" />
@@ -964,7 +964,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
         <h3 className="text-base font-semibold text-slate-800">Localisation</h3>
       </div>
 
-      <div className="p-5 rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm space-y-4">
+      <div className="glass-light p-5 rounded-2xl space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput
             name="pays"
@@ -1070,7 +1070,7 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm hover:bg-white transition-colors"
+          className="glass-control absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/95 transition-colors"
           aria-label="Fermer"
         >
           <X className="w-5 h-5 text-slate-700" />

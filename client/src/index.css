@@ -5,11 +5,25 @@
   --primary: #007AFF;
   --primary-light: rgba(0, 122, 255, 0.1);
   --primary-dark: #0056CC;
+
+  /* ─── Palette glass ───
+     Une seule échelle d'opacité/flou pour tout le projet. Avant, chaque page
+     réinventait ses propres valeurs (bg-white/70, /80, /85, /90, /95 mélangées
+     à des blur sm/md/lg/xl au hasard) : incohérent et difficile à faire évoluer.
+     Désormais toute variation de "force" du verre passe par ces variables. */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-light: rgba(255, 255, 255, 0.5);
   --glass-bg-dark: rgba(255, 255, 255, 0.15);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);   /* nav/headers sur contenu scrollable */
+  --glass-bg-solid: rgba(255, 255, 255, 0.95);    /* menus déroulants, contenu à forte lisibilité */
   --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border-soft: rgba(226, 232, 240, 0.6);  /* bordure discrète sur fond clair (slate-200/60) */
+  --glass-scrim: rgba(0, 0, 0, 0.3);              /* voile sombre derrière une modale */
+
+  --blur-sm: 8px;
   --blur: 12px;
+  --blur-lg: 20px;
+
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
@@ -17,10 +31,6 @@
   --radius-md: 16px;
   --radius-lg: 20px;
   --radius-xl: 24px;
-}
-
-body {
-  background: #F2F2F7;
 }
 
 /* Reset */
@@ -66,12 +76,61 @@ body {
 }
 .glass-light {
   background: var(--glass-bg-light);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
   border: 1px solid var(--glass-border);
 }
 .glass-dark {
   background: var(--glass-bg-dark);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+}
+
+/* Barre de nav / header collant au scroll : besoin d'une lisibilité plus
+   forte que les cartes de contenu, donc opacité plus élevée. */
+.glass-nav {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  border-bottom: 1px solid var(--glass-border-soft);
+}
+
+/* Panneaux qui doivent rester très lisibles : menus déroulants, cartes
+   d'auth (connexion/inscription), contenu dense. */
+.glass-solid {
+  background: var(--glass-bg-solid);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  border: 1px solid var(--glass-border-soft);
+}
+
+/* Modales : conteneur de la boîte de dialogue elle-même. */
+.glass-modal {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+}
+
+/* Voile sombre affiché derrière une modale/popup plein écran. */
+.glass-overlay {
+  background: var(--glass-scrim);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+/* Petits boutons ronds flottants sur une image (carrousel, favoris...). */
+.glass-control {
+  background: var(--glass-bg-solid);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  box-shadow: var(--shadow-sm);
+}
+
+/* Badges/pilules flottants (hero, filtres). */
+.glass-pill {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border-soft);
 }

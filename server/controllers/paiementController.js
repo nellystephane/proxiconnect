@@ -1,5 +1,6 @@
 const Paiement = require('../models/Paiement');
 const Annonce = require('../models/Annonce');
+const { AVANTAGES_GRATUIT } = require('../utils/abonnement');
 
 // ─── Avantages selon le type d'abonnement ───
 const AVANTAGES = {
@@ -34,7 +35,7 @@ const PRIX = {
 // GET /api/paiements/offres
 const getOffres = async (req, res) => {
   res.json([
-    { type: 'gratuit', label: 'Gratuit', prix: 0, duree: 'Illimitée', avantages: { nombreAnnonces: 1, videoAutorisee: false, miseEnAvant: false, dureeAnnonce: 15 } },
+    { type: 'gratuit', label: 'Gratuit', prix: 0, duree: 'Illimitée', avantages: AVANTAGES_GRATUIT },
     { type: 'abonnement_30j', label: '30 jours', prix: PRIX.abonnement_30j, duree: '30 jours', avantages: AVANTAGES.abonnement_30j },
     { type: 'abonnement_90j', label: '90 jours', prix: PRIX.abonnement_90j, duree: '90 jours', avantages: AVANTAGES.abonnement_90j },
     { type: 'abonnement_annuel', label: 'Annuel', prix: PRIX.abonnement_annuel, duree: '360 jours', avantages: AVANTAGES.abonnement_annuel }
@@ -120,12 +121,7 @@ const getStatutAbonnement = async (req, res) => {
     if (!paiementActif) {
       return res.json({
         estAbonne: false,
-        avantages: {
-          nombreAnnonces: 1,
-          videoAutorisee: false,
-          miseEnAvant: false,
-          dureeAnnonce: 15
-        }
+        avantages: AVANTAGES_GRATUIT
       });
     }
 

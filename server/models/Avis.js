@@ -43,6 +43,12 @@ const avisSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Utilisateurs ayant déjà signalé cet avis, pour empêcher qu'une seule
+  // personne fasse gonfler le compteur en cliquant plusieurs fois.
+  signalePar: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   estMasque: {
     type: Boolean,
     default: false

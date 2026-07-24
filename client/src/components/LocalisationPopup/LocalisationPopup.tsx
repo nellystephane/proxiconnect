@@ -62,14 +62,14 @@ const LocalisationPopup: React.FC<LocalisationPopupProps> = ({ open, initialValu
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="glass-overlay fixed inset-0 z-[70] flex items-end md:items-center justify-center"
       onClick={onClose}
     >
       <div
         className="w-full max-w-md max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-white/30 px-6 py-4 rounded-t-3xl">
+        <div className="glass-modal sticky top-0 z-10 flex items-center justify-between border-b border-white/30 px-6 py-4 rounded-t-3xl">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#007AFF]" />
             <h2 className="text-base font-semibold text-slate-900">Localisation</h2>

@@ -27,7 +27,7 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
   return (
     <Link
       to={`/annonces/${annonce._id}`}
-      className="group relative w-full block bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg active:scale-[0.99]"
+      className="group glass relative w-full block rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
       style={{
         boxShadow: `0 12px 30px -8px ${categoryColor}60, 0 4px 6px rgba(0,0,0,0.05)`,
       }}
@@ -64,7 +64,7 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
       {onToggleFavori && (
         <button
           onClick={handleFavoriClick}
-          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-white transition"
+          className="glass-control absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/95 transition"
           aria-label={estFavori ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
           <Heart className={`w-4 h-4 transition-colors ${estFavori ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />

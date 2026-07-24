@@ -161,13 +161,13 @@ const DetailAnnonce = () => {
               <>
                 <button
                   onClick={() => setPhotoIndex((p) => (p - 1 + annonce.photos.length) % annonce.photos.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                  className="glass-control absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-white/95"
                 >
                   <ChevronLeft className="w-5 h-5 text-slate-700" />
                 </button>
                 <button
                   onClick={() => setPhotoIndex((p) => (p + 1) % annonce.photos.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                  className="glass-control absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-white/95"
                 >
                   <ChevronRight className="w-5 h-5 text-slate-700" />
                 </button>
@@ -192,7 +192,7 @@ const DetailAnnonce = () => {
         <button
           onClick={toggleFavori}
           disabled={favoriLoading}
-          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-white transition disabled:opacity-60"
+          className="glass-control absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/95 transition disabled:opacity-60"
           aria-label={estFavori ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
           <Heart className={`w-5 h-5 transition-colors ${estFavori ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />

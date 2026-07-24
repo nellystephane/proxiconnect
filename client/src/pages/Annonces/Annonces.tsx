@@ -100,7 +100,7 @@ const Annonces = () => {
       </form>
 
       {showFiltres && (
-        <div className="mb-4 p-4 rounded-xl bg-white border border-slate-200 animate-fade-in">
+        <div className="glass mb-4 p-4 rounded-xl animate-fade-in">
           <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville</label>
           <input
             value={ville}
