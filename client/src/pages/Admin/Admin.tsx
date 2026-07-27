@@ -4,7 +4,7 @@ import {
   Shield, Users, FileText, MessageSquare, CreditCard,
   TrendingUp, Activity, AlertTriangle, Ban, CheckCircle,
   XCircle, Eye, Search, ChevronLeft, ChevronRight,
-  Trash2, RefreshCw, Star, MapPin
+Trash2, RefreshCw, Star
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api/axios';
@@ -125,7 +125,7 @@ const UsersTab = () => {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const handleBan = async (userId: string, estBanni: boolean) => {
+const handleBan = async (userId: string, estBanni: boolean | undefined) => {
     const motif = estBanni ? '' : prompt('Motif du bannissement :');
     if (!estBanni && motif === null) return;
     try {
