@@ -58,11 +58,12 @@ function AppContent() {
   // fil d'annonces pour les membres) : on n'affiche pas le Header partagé dessus.
   const afficherHeader = location.pathname !== '/' && !location.pathname.startsWith('/admin');
   const afficherFooter = isConnected && location.pathname !== '/' && !location.pathname.startsWith('/admin');
+  const estAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen bg-[#F2F2F7]">
       {afficherHeader && <Header />}
-      <main className={afficherHeader && !location.pathname.startsWith('/admin') ? 'pt-20 pb-8 px-4 max-w-2xl mx-auto' : ''}>
+      <main className={!estAdminRoute && afficherHeader ? 'pt-20 pb-8 px-4 max-w-2xl mx-auto' : ''}>
         <Routes>
           <Route path="/" element={isConnected ? <AccueilConnecte /> : <Accueil />} />
           <Route path="/connexion" element={<Connexion />} />

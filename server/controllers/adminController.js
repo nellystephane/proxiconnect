@@ -30,7 +30,13 @@ const getDashboard = async (req, res) => {
       Annonce.countDocuments({ statut: 'actif' }),
       Annonce.countDocuments({ statut: 'expiré' }),
       User.countDocuments({ estBanni: true }),
-      Paiement.countDocuments({ statut: 'confirmé', dateFin: { $gt: new Date() } }),
+      Paiement.countDocuments({
+        statut: 'confirmé',
+        $or: [
+          { dateFin: { $gt: new Date() } },
+          { dateFin: null }
+        ]
+      }),
       Paiement.countDocuments({ statut: 'confirmé' }),
       Paiement.aggregate([
         { $match: { statut: 'confirmé' } },

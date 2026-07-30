@@ -4,7 +4,7 @@ import {
   Shield, Users, FileText, MessageSquare, CreditCard,
   TrendingUp, Activity, AlertTriangle, Ban, CheckCircle,
   XCircle, Eye, Search, ChevronLeft, ChevronRight,
-Trash2, RefreshCw, Star
+  Trash2, RefreshCw, Star
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api/axios';
@@ -33,6 +33,23 @@ const Loader = () => (
   </div>
 );
 
+const ErrorMessage = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+  <div className="flex flex-col items-center justify-center py-16 gap-4">
+    <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+      <AlertTriangle className="w-8 h-8 text-red-400" />
+    </div>
+    <p className="text-sm text-red-500 text-center max-w-xs">{message}</p>
+    {onRetry && (
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition"
+      >
+        <RefreshCw className="w-3.5 h-3.5" /> Réessayer
+      </button>
+    )}
+  </div>
+);
+
 const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string }) => (
   <div className="glass rounded-2xl p-4 flex items-center gap-4">
     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
@@ -49,16 +66,26 @@ const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: strin
 const DashboardTab = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    API.get('/admin/dashboard')
-      .then(r => setStats(r.data.stats))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await API.get('/admin/dashboard');
+      setStats(data.stats);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erreur de chargement des statistiques.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+
   if (loading) return <Loader />;
-  if (!stats) return <p className="text-red-500 text-center py-10">Erreur de chargement des statistiques.</p>;
+  if (error) return <ErrorMessage message={error} onRetry={fetchDashboard} />;
+  if (!stats) return <ErrorMessage message="Aucune donnée disponible." />;
 
   return (
     <div className="space-y-6">

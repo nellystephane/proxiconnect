@@ -55,6 +55,7 @@ const register = async (req, res) => {
       email: user.email,
       telephone: user.telephone,
       localisation: user.localisation,
+      role: user.role,
       token: generateToken(user._id)
     });
 
@@ -97,6 +98,7 @@ const login = async (req, res) => {
       telephone: user.telephone,
       photo: user.photo,
       localisation: user.localisation,
+      role: user.role,
       estVerifie: user.estVerifie,
       token: generateToken(user._id)
     });
@@ -165,7 +167,6 @@ const updateProfil = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur.', error: error.message });
   }
 };
-
 
 // ─── Changer le mot de passe ───
 // PUT /api/users/password

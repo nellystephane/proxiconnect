@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Search, Heart, User, LogOut, PlusCircle, Shield } from 'lucide-react';
+import { Search, Heart, User, LogOut, PlusCircle, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
@@ -25,22 +25,16 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 mx-3 mt-3">
       <div className="glass rounded-2xl px-4 h-14 flex items-center justify-between shadow-sm">
-        {/* Logo */}
         <Link to="/" className="group flex items-center gap-2 no-underline">
           <div className="relative">
             <div className="absolute inset-0 bg-[#007AFF] rounded-lg blur opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#007AFF] to-indigo-600 shadow-md shadow-blue-500/20 transition-transform duration-300 group-hover:scale-105">
-              <MapPin className="w-4 h-4 text-white" />
-            </div>
+            <span className="relative text-lg font-bold text-gray-900">
+              ProxiConnect
+            </span>
           </div>
-          <span className="font-bold text-sm text-gray-900 tracking-tight">
-            ProxiConnect
-          </span>
         </Link>
 
-        {/* Actions droite */}
         <div className="flex items-center gap-2">
-          {/* Bouton recherche */}
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={`w-9 h-9 flex items-center justify-center rounded-full transition ${
@@ -55,7 +49,16 @@ const Header = () => {
 
           {isConnected ? (
             <>
-              {/* Favoris */}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-purple-600 bg-purple-50 hover:bg-purple-100 transition shadow-sm"
+                  aria-label="Administration"
+                  title="Administration"
+                >
+                  <Shield className="w-5 h-5" />
+                </Link>
+              )}
               <Link
                 to="/favoris"
                 className="w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 transition"
@@ -64,7 +67,6 @@ const Header = () => {
                 <Heart className="w-5 h-5" />
               </Link>
 
-              {/* Profil utilisateur */}
               <div className="relative">
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -75,10 +77,7 @@ const Header = () => {
 
                 {showProfileMenu && (
                   <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowProfileMenu(false)}
-                    />
+                    <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)} />
                     <div className="absolute right-0 top-12 z-20 w-48 glass rounded-2xl p-2 shadow-lg animate-scale-in">
                       <Link
                         to="/profil"
@@ -140,7 +139,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Barre de recherche étendue */}
       {showSearch && (
         <form onSubmit={handleSearchSubmit} className="mt-2 glass rounded-2xl p-3 animate-slide-up">
           <div className="flex items-center gap-2">
