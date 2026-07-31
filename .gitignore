@@ -4,8 +4,9 @@
 # dépendances
 node_modules/
 
-# uploads
-uploads/
+# uploads (contenu ignoré, mais pas le .gitkeep)
+uploads/*
+!uploads/.gitkeep
 
 # logs
 *.log
