@@ -12,7 +12,7 @@ const chambreSchema = new mongoose.Schema({
   prixParNuit: { type: Number, required: true, min: 0 },
   capacite: { type: Number, required: true, min: 1, default: 2 },
 
-  photos: { type: [String], default: [] },
+  photos: { type: [String], default: [], validate: [(val) => val.length <= 10, 'Maximum 10 photos autorisées'] },
   equipements: { type: [String], default: [] }, // ex: "Climatisation", "Wifi", "TV"
 
   disponible: { type: Boolean, default: true }, // désactivée manuellement par l'hôtelier (hors service)

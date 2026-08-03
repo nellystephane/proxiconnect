@@ -16,7 +16,7 @@ const exigerRestaurant = async (userId) => {
 const createPlat = async (req, res) => {
   try {
     const restaurant = await exigerRestaurant(req.user._id);
-    const { nom, description, categorie, prix, photo, epice, disponible } = req.body;
+    const { nom, description, categorie, prix, photos, epice, disponible } = req.body;
 
     if (!nom || !categorie || prix === undefined) {
       return res.status(400).json({ message: 'Nom, catégorie et prix sont obligatoires.' });
@@ -26,7 +26,7 @@ const createPlat = async (req, res) => {
       restaurant: restaurant._id,
       createur: req.user._id,
       nom, description: description || '', categorie, prix,
-      photo: photo || '', epice: !!epice, disponible: disponible ?? true
+      photos: photos || [], epice: !!epice, disponible: disponible ?? true
     });
 
     res.status(201).json(plat);
@@ -45,7 +45,7 @@ const updatePlat = async (req, res) => {
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres plats.' });
     }
 
-    const champsAutorises = ['nom', 'description', 'categorie', 'prix', 'photo', 'epice', 'disponible'];
+    const champsAutorises = ['nom', 'description', 'categorie', 'prix', 'photos', 'epice', 'disponible'];
     champsAutorises.forEach((champ) => {
       if (req.body[champ] !== undefined) plat[champ] = req.body[champ];
     });
@@ -82,4 +82,34 @@ const deletePlat = async (req, res) => {
   }
 };
 
-module.exports = { createPlat, updatePlat, deletePlat };
+// ─── Catalogue public des plats (toutes cartes confondues) ───
+// GET /api/plats?categorie=&ville=&recherche=&page=&limite=
+const getPlats = async (req, res) => {
+  try {
+    const { categorie, ville, recherche, page = 1, limite = 20 } = req.query;
+    const pageNormalisee = Math.max(1, parseInt(page) || 1);
+    const limiteNormalisee = Math.min(50, Math.max(1, parseInt(limite) || 20));
+
+    const filtre = { disponible: true };
+    if (categorie) filtre.categorie = categorie;
+    if (recherche) filtre.$text = { $search: recherche };
+
+    let requete = Plat.find(filtre).populate({
+      path: 'restaurant',
+      match: ville ? { 'localisation.ville': new RegExp(ville, 'i') } : {}
+    });
+
+    const tousLesPlats = await requete
+      .sort({ estMisEnAvant: -1, createdAt: -1 })
+      .skip((pageNormalisee - 1) * limiteNormalisee)
+      .limit(limiteNormalisee);
+
+    const plats = tousLesPlats.filter((p) => p.restaurant);
+
+    res.json({ plats, page: pageNormalisee });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+module.exports = { createPlat, updatePlat, deletePlat, getPlats };

@@ -120,7 +120,7 @@ export interface Plat {
   description: string;
   categorie: string;
   prix: number;
-  photo: string;
+  photos: string[];
   epice: boolean;
   disponible: boolean;
   estMisEnAvant: boolean;

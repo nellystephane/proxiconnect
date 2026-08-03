@@ -78,4 +78,33 @@ const deleteChambre = async (req, res) => {
   }
 };
 
-module.exports = { createChambre, updateChambre, deleteChambre };
+// ─── Catalogue public des chambres (tous établissements confondus) ───
+// GET /api/chambres?ville=&recherche=&page=&limite=
+const getChambres = async (req, res) => {
+  try {
+    const { ville, recherche, page = 1, limite = 20 } = req.query;
+    const pageNormalisee = Math.max(1, parseInt(page) || 1);
+    const limiteNormalisee = Math.min(50, Math.max(1, parseInt(limite) || 20));
+
+    const filtre = { disponible: true };
+    if (recherche) filtre.$text = { $search: recherche };
+
+    let requete = Chambre.find(filtre).populate({
+      path: 'hotel',
+      match: ville ? { 'localisation.ville': new RegExp(ville, 'i') } : {}
+    });
+
+    const toutesLesChambres = await requete
+      .sort({ estMisEnAvant: -1, prixParNuit: 1 })
+      .skip((pageNormalisee - 1) * limiteNormalisee)
+      .limit(limiteNormalisee);
+
+    const chambres = toutesLesChambres.filter((c) => c.hotel);
+
+    res.json({ chambres, page: pageNormalisee });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+module.exports = { createChambre, updateChambre, deleteChambre, getChambres };

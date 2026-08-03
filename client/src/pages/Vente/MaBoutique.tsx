@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Store, Plus, Pencil, Trash2, Package, ShoppingBag, AlertCircle,
+  Store, Plus, Minus, Pencil, Trash2, Package, ShoppingBag, AlertCircle,
   X as XIcon, Check, ExternalLink, Loader2, Bike, Crown
 } from 'lucide-react';
 import API from '../../api/axios';
@@ -9,6 +9,8 @@ import ImageUploader from '../../components/ImageUploader';
 import AbonnementProWidget from '../../components/AbonnementProWidget/AbonnementProWidget';
 import { CATEGORIES_PRODUIT, getCategorieProduitColor } from '../../utils/categoriesProduit';
 import type { Boutique, Produit, Commande, DemandeLivraison, AbonnementPro } from '../../types';
+
+const MAX_PHOTOS_PRODUIT = 10;
 
 type Onglet = 'produits' | 'commandes' | 'parametres';
 
@@ -133,6 +135,7 @@ const MaBoutique = () => {
       ...produitModal.produit,
       prix: Number(produitModal.produit.prix),
       quantiteDisponible: Number(produitModal.produit.quantiteDisponible) || 0,
+      photos: produitModal.produit.photos.filter((url) => url && url.trim() !== ''),
     };
     try {
       if (produitModal.mode === 'creation') {
@@ -427,10 +430,56 @@ const MaBoutique = () => {
             </div>
 
             <div className="space-y-3">
-              <ImageUploader
-                currentImage={produitModal.produit.photos[0]}
-                onUpload={(url) => setProduitModal((m) => m && { ...m, produit: { ...m.produit, photos: [url] } })}
-              />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Photos <span className="text-slate-400 normal-case font-normal">({produitModal.produit.photos.filter(Boolean).length}/{MAX_PHOTOS_PRODUIT})</span>
+                  </p>
+                  {produitModal.produit.photos.length < MAX_PHOTOS_PRODUIT && (
+                    <button
+                      type="button"
+                      onClick={() => setProduitModal((m) => m && { ...m, produit: { ...m.produit, photos: [...m.produit.photos, ''] } })}
+                      className="flex items-center gap-1 text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-blue-50"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Ajouter
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {(produitModal.produit.photos.length > 0 ? produitModal.produit.photos : ['']).map((url, idx) => (
+                    <div
+                      key={idx}
+                      className={`relative group rounded-xl border-2 border-dashed overflow-hidden aspect-square ${
+                        url ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
+                      }`}
+                    >
+                      <ImageUploader
+                        currentImage={url}
+                        onUpload={(nouvelleUrl) => setProduitModal((m) => {
+                          if (!m) return m;
+                          const photos = [...m.produit.photos];
+                          if (photos.length === 0) photos.push(nouvelleUrl); else photos[idx] = nouvelleUrl;
+                          return { ...m, produit: { ...m.produit, photos } };
+                        })}
+                      />
+                      {idx === 0 && url && (
+                        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-[#007AFF] text-white text-[9px] font-bold rounded-full pointer-events-none">COUVERTURE</div>
+                      )}
+                      {produitModal.produit.photos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setProduitModal((m) => m && { ...m, produit: { ...m.produit, photos: m.produit.photos.filter((_, i) => i !== idx) } })}
+                          className="glass-control absolute top-1.5 right-1.5 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Supprimer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <input
                 value={produitModal.produit.nom}

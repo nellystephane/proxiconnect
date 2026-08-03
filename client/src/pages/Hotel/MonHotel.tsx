@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Building2, Plus, Pencil, Trash2, BedDouble, CalendarCheck, AlertCircle,
+  Building2, Plus, Minus, Pencil, Trash2, BedDouble, CalendarCheck, AlertCircle,
   X as XIcon, Check, ExternalLink, Loader2, Crown
 } from 'lucide-react';
 import API from '../../api/axios';
 import ImageUploader from '../../components/ImageUploader';
 import AbonnementProWidget from '../../components/AbonnementProWidget/AbonnementProWidget';
 import type { Hotel, Chambre, Reservation, AbonnementPro } from '../../types';
+
+const MAX_PHOTOS_CHAMBRE = 10;
 
 type Onglet = 'chambres' | 'reservations' | 'parametres';
 
@@ -84,7 +86,12 @@ const MonHotel = () => {
     if (!type.trim() || !prixParNuit) { setChambreErreur('Type et prix par nuit sont obligatoires.'); return; }
     setChambreEnvoi(true);
     setChambreErreur('');
-    const payload = { ...chambreModal.chambre, prixParNuit: Number(chambreModal.chambre.prixParNuit), capacite: Number(chambreModal.chambre.capacite) || 2 };
+    const payload = {
+      ...chambreModal.chambre,
+      prixParNuit: Number(chambreModal.chambre.prixParNuit),
+      capacite: Number(chambreModal.chambre.capacite) || 2,
+      photos: chambreModal.chambre.photos.filter((url) => url && url.trim() !== ''),
+    };
     try {
       if (chambreModal.mode === 'creation') {
         const { data } = await API.post('/chambres', payload);
@@ -256,7 +263,55 @@ const MonHotel = () => {
             </div>
 
             <div className="space-y-3">
-              <ImageUploader currentImage={chambreModal.chambre.photos[0]} onUpload={(url) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: [url] } })} />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Photos <span className="text-slate-400 normal-case font-normal">({chambreModal.chambre.photos.filter(Boolean).length}/{MAX_PHOTOS_CHAMBRE})</span>
+                  </p>
+                  {chambreModal.chambre.photos.length < MAX_PHOTOS_CHAMBRE && (
+                    <button
+                      type="button"
+                      onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: [...m.chambre.photos, ''] } })}
+                      className="flex items-center gap-1 text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-blue-50"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Ajouter
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(chambreModal.chambre.photos.length > 0 ? chambreModal.chambre.photos : ['']).map((url, idx) => (
+                    <div
+                      key={idx}
+                      className={`relative group rounded-xl border-2 border-dashed overflow-hidden aspect-square ${
+                        url ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
+                      }`}
+                    >
+                      <ImageUploader
+                        currentImage={url}
+                        onUpload={(nouvelleUrl) => setChambreModal((m) => {
+                          if (!m) return m;
+                          const photos = [...m.chambre.photos];
+                          if (photos.length === 0) photos.push(nouvelleUrl); else photos[idx] = nouvelleUrl;
+                          return { ...m, chambre: { ...m.chambre, photos } };
+                        })}
+                      />
+                      {idx === 0 && url && (
+                        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-[#007AFF] text-white text-[9px] font-bold rounded-full pointer-events-none">COUVERTURE</div>
+                      )}
+                      {chambreModal.chambre.photos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: m.chambre.photos.filter((_, i) => i !== idx) } })}
+                          className="glass-control absolute top-1.5 right-1.5 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Supprimer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <input value={chambreModal.chambre.type} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, type: e.target.value } })} placeholder="Type (ex : Chambre double)" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
 

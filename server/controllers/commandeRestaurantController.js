@@ -49,7 +49,7 @@ const createCommande = async (req, res) => {
       restaurant.proprietaire,
       'nouvelle_commande',
       'Nouvelle commande',
-      `Vous avez reçu une nouvelle commande de ${montantTotal.toLocaleString('fr-FR')} XOF sur ${restaurant.nom}.`,
+      `${req.user.prenom} ${req.user.nom} a passé une commande de ${montantTotal.toLocaleString('fr-FR')} XOF sur ${restaurant.nom}.`,
       '/restauration'
     );
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  UtensilsCrossed, Plus, Pencil, Trash2, ShoppingBag, AlertCircle,
+  UtensilsCrossed, Plus, Minus, Pencil, Trash2, ShoppingBag, AlertCircle,
   X as XIcon, Check, ExternalLink, Loader2, Flame, Bike, Crown
 } from 'lucide-react';
 import API from '../../api/axios';
@@ -10,11 +10,13 @@ import AbonnementProWidget from '../../components/AbonnementProWidget/Abonnement
 import { CATEGORIES_PLAT, getCategoriePlatColor } from '../../utils/categoriesPlat';
 import type { Restaurant, Plat, CommandeRestaurant, DemandeLivraison, AbonnementPro } from '../../types';
 
+const MAX_PHOTOS_PLAT = 10;
+
 type Onglet = 'plats' | 'commandes' | 'parametres';
 
 const STATUTS_COMMANDE: CommandeRestaurant['statut'][] = ['en_attente', 'en_préparation', 'prête', 'livrée', 'annulée'];
 
-const platVide = { nom: '', description: '', categorie: '', prix: '', photo: '', epice: false, disponible: true, estMisEnAvant: false };
+const platVide = { nom: '', description: '', categorie: '', prix: '', photos: [] as string[], epice: false, disponible: true, estMisEnAvant: false };
 
 const MonRestaurant = () => {
   const [chargement, setChargement] = useState(true);
@@ -89,7 +91,7 @@ const MonRestaurant = () => {
     setPlatErreur('');
     setPlatModal({
       mode: 'edition', id: p._id,
-      plat: { nom: p.nom, description: p.description, categorie: p.categorie, prix: String(p.prix), photo: p.photo, epice: p.epice, disponible: p.disponible, estMisEnAvant: p.estMisEnAvant },
+      plat: { nom: p.nom, description: p.description, categorie: p.categorie, prix: String(p.prix), photos: p.photos || [], epice: p.epice, disponible: p.disponible, estMisEnAvant: p.estMisEnAvant },
     });
   };
 
@@ -99,7 +101,11 @@ const MonRestaurant = () => {
     if (!nom.trim() || !categorie || !prix) { setPlatErreur('Nom, catégorie et prix sont obligatoires.'); return; }
     setPlatEnvoi(true);
     setPlatErreur('');
-    const payload = { ...platModal.plat, prix: Number(platModal.plat.prix) };
+    const payload = {
+      ...platModal.plat,
+      prix: Number(platModal.plat.prix),
+      photos: platModal.plat.photos.filter((url) => url && url.trim() !== ''),
+    };
     try {
       if (platModal.mode === 'creation') {
         const { data } = await API.post('/plats', payload);
@@ -239,7 +245,7 @@ const MonRestaurant = () => {
               {plats.map((p) => (
                 <div key={p._id} className="glass rounded-2xl p-3 flex gap-3">
                   <div className="w-16 h-16 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                    {p.photo ? <img src={p.photo} alt={p.nom} className="w-full h-full object-cover" /> : <UtensilsCrossed className="w-5 h-5 text-slate-300" />}
+                    {p.photos?.[0] ? <img src={p.photos[0]} alt={p.nom} className="w-full h-full object-cover" /> : <UtensilsCrossed className="w-5 h-5 text-slate-300" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
@@ -329,7 +335,55 @@ const MonRestaurant = () => {
             </div>
 
             <div className="space-y-3">
-              <ImageUploader currentImage={platModal.plat.photo} onUpload={(url) => setPlatModal((m) => m && { ...m, plat: { ...m.plat, photo: url } })} />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Photos <span className="text-slate-400 normal-case font-normal">({platModal.plat.photos.filter(Boolean).length}/{MAX_PHOTOS_PLAT})</span>
+                  </p>
+                  {platModal.plat.photos.length < MAX_PHOTOS_PLAT && (
+                    <button
+                      type="button"
+                      onClick={() => setPlatModal((m) => m && { ...m, plat: { ...m.plat, photos: [...m.plat.photos, ''] } })}
+                      className="flex items-center gap-1 text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-blue-50"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Ajouter
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(platModal.plat.photos.length > 0 ? platModal.plat.photos : ['']).map((url, idx) => (
+                    <div
+                      key={idx}
+                      className={`relative group rounded-xl border-2 border-dashed overflow-hidden aspect-square ${
+                        url ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
+                      }`}
+                    >
+                      <ImageUploader
+                        currentImage={url}
+                        onUpload={(nouvelleUrl) => setPlatModal((m) => {
+                          if (!m) return m;
+                          const photos = [...m.plat.photos];
+                          if (photos.length === 0) photos.push(nouvelleUrl); else photos[idx] = nouvelleUrl;
+                          return { ...m, plat: { ...m.plat, photos } };
+                        })}
+                      />
+                      {idx === 0 && url && (
+                        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-[#007AFF] text-white text-[9px] font-bold rounded-full pointer-events-none">COUVERTURE</div>
+                      )}
+                      {platModal.plat.photos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setPlatModal((m) => m && { ...m, plat: { ...m.plat, photos: m.plat.photos.filter((_, i) => i !== idx) } })}
+                          className="glass-control absolute top-1.5 right-1.5 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Supprimer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <input value={platModal.plat.nom} onChange={(e) => setPlatModal((m) => m && { ...m, plat: { ...m.plat, nom: e.target.value } })} placeholder="Nom du plat" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
               <textarea value={platModal.plat.description} onChange={(e) => setPlatModal((m) => m && { ...m, plat: { ...m.plat, description: e.target.value } })} placeholder="Description" rows={2} className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 resize-none" />

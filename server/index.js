@@ -90,6 +90,7 @@ io.use(async (socket, next) => {
     const user = await User.findById(decoded.id);
     if (!user) return next(new Error('Utilisateur introuvable.'));
     socket.userId = user._id.toString();
+    socket.userNomComplet = `${user.prenom} ${user.nom}`;
     next();
   } catch {
     next(new Error('Token invalide.'));
@@ -136,8 +137,8 @@ io.on('connection', (socket) => {
             io,
             p,
             'nouveau_message',
-            'Nouveau message',
-            contenu.trim().slice(0, 100),
+            `Nouveau message de ${socket.userNomComplet}`,
+            contenu.trim().length > 100 ? `${contenu.trim().slice(0, 100)}…` : contenu.trim(),
             `/messages/${conversationId}`
           );
         }

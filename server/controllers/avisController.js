@@ -55,7 +55,7 @@ const createAvis = async (req, res) => {
       concerne,
       'nouvel_avis',
       'Nouvel avis reçu',
-      `Vous avez reçu un avis ${note}/5.`,
+      `${req.user.prenom} ${req.user.nom} vous a laissé un avis ${note}/5.`,
       '/profil?onglet=avis'
     );
 

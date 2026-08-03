@@ -65,7 +65,7 @@ const createCommande = async (req, res) => {
       boutique.proprietaire,
       'nouvelle_commande',
       'Nouvelle commande',
-      `Vous avez reçu une nouvelle commande de ${montantTotal.toLocaleString('fr-FR')} XOF sur ${boutique.nom}.`,
+      `${req.user.prenom} ${req.user.nom} a passé une commande de ${montantTotal.toLocaleString('fr-FR')} XOF sur ${boutique.nom}.`,
       '/vente'
     );
 

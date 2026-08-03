@@ -114,7 +114,14 @@ const envoyerMessage = async (req, res) => {
 
     const destinataire = conversation.participants.find((p) => p.toString() !== req.user._id.toString());
     if (destinataire) {
-      await creerNotification(io, destinataire, 'nouveau_message', 'Nouveau message', contenu.trim().slice(0, 100), `/messages/${conversation._id}`);
+      await creerNotification(
+        io,
+        destinataire,
+        'nouveau_message',
+        `Nouveau message de ${req.user.prenom} ${req.user.nom}`,
+        contenu.trim().length > 100 ? `${contenu.trim().slice(0, 100)}…` : contenu.trim(),
+        `/messages/${conversation._id}`
+      );
     }
 
     res.status(201).json(message);

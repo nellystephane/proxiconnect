@@ -81,7 +81,7 @@ const accepterDemande = async (req, res) => {
       demande.vendeur,
       'demande_livraison_acceptee',
       'Livreur trouvé',
-      'Un livreur a accepté votre demande de livraison.',
+      `${req.user.prenom} ${req.user.nom} a accepté votre demande de livraison.`,
       '/vente'
     );
 

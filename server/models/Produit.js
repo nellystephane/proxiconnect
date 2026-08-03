@@ -57,7 +57,7 @@ const produitSchema = new mongoose.Schema({
 
   photos: {
     type: [String],
-    validate: [(val) => val.length <= 6, 'Maximum 6 photos autorisées']
+    validate: [(val) => val.length <= 10, 'Maximum 10 photos autorisées']
   },
 
   // ─── Variantes (taille, couleur, etc.) ───

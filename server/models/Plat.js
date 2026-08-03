@@ -13,7 +13,7 @@ const platSchema = new mongoose.Schema({
   categorie: { type: String, required: true, trim: true },
 
   prix: { type: Number, required: true, min: 0 },
-  photo: { type: String, default: '' },
+  photos: { type: [String], default: [], validate: [(val) => val.length <= 10, 'Maximum 10 photos autorisées'] },
 
   epice: { type: Boolean, default: false },
   disponible: { type: Boolean, default: true },

@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import AnnonceCard from '../../components/AnnonceCard/AnnonceCard.tsx';
 import API from '../../api/axios.ts';
-import { Plus, Filter, ChevronDown, Sparkles, LayoutGrid, ArrowRight, X, AlertCircle } from 'lucide-react';
-import type { Annonce } from '../../types';
+import { Plus, Filter, ChevronDown, Sparkles, LayoutGrid, ArrowRight, X, AlertCircle, Store, UtensilsCrossed, BedDouble, Package } from 'lucide-react';
+import type { Annonce, Produit, Plat, Chambre } from '../../types';
 
 const AccueilConnecte = () => {
   const { user } = useAuth();
@@ -33,6 +33,18 @@ const AccueilConnecte = () => {
     API.get('/users/favoris')
       .then(({ data }) => setFavoris(data.map((a: Annonce) => a._id)))
       .catch(() => {});
+  }, []);
+
+  // ─── Espaces métiers : produits, plats, chambres visibles par tous les
+  // membres connectés (et non plus seulement par le détenteur de l'espace) ───
+  const [produits, setProduits] = useState<Produit[]>([]);
+  const [plats, setPlats] = useState<Plat[]>([]);
+  const [chambres, setChambres] = useState<Chambre[]>([]);
+
+  useEffect(() => {
+    API.get('/produits?limite=10').then(({ data }) => setProduits(data.produits || [])).catch(() => {});
+    API.get('/plats?limite=10').then(({ data }) => setPlats(data.plats || [])).catch(() => {});
+    API.get('/chambres?limite=10').then(({ data }) => setChambres(data.chambres || [])).catch(() => {});
   }, []);
 
   const [erreurFavori, setErreurFavori] = useState('');
@@ -156,6 +168,82 @@ const AccueilConnecte = () => {
           </div>
         )}
       </section>
+
+       {/* ========== ESPACES MÉTIERS : produits, plats, chambres ========== */}
+      {produits.length > 0 && (
+        <section className="animate-slide-up" style={{ animationDelay: '0.15s' } as React.CSSProperties}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800"><Store className="w-4 h-4 text-[#007AFF]" /> Produits en vedette</h2>
+            <Link to="/boutiques" className="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1">Voir tout <ArrowRight className="w-3 h-3" /></Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {produits.map((p) => {
+              const boutique = typeof p.boutique === 'object' ? p.boutique : null;
+              return (
+                <Link key={p._id} to={boutique ? `/boutique/${boutique._id}` : '/boutiques'} className="shrink-0 w-36 glass-light rounded-2xl overflow-hidden no-underline hover:shadow-md transition-shadow">
+                  <div className="h-24 bg-slate-100 flex items-center justify-center overflow-hidden">
+                    {p.photos?.[0] ? <img src={p.photos[0]} alt={p.nom} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-slate-300" />}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
+                    <p className="text-xs font-bold text-[#007AFF]">{p.prix.toLocaleString('fr-FR')} XOF</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {plats.length > 0 && (
+        <section className="animate-slide-up" style={{ animationDelay: '0.18s' } as React.CSSProperties}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800"><UtensilsCrossed className="w-4 h-4 text-amber-500" /> Plats disponibles</h2>
+            <Link to="/restaurants" className="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1">Voir tout <ArrowRight className="w-3 h-3" /></Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {plats.map((p) => {
+              const restaurant = typeof p.restaurant === 'object' ? p.restaurant : null;
+              return (
+                <Link key={p._id} to={restaurant ? `/restaurant/${restaurant._id}` : '/restaurants'} className="shrink-0 w-36 glass-light rounded-2xl overflow-hidden no-underline hover:shadow-md transition-shadow">
+                  <div className="h-24 bg-slate-100 flex items-center justify-center overflow-hidden">
+                    {p.photos?.[0] ? <img src={p.photos[0]} alt={p.nom} className="w-full h-full object-cover" /> : <UtensilsCrossed className="w-5 h-5 text-slate-300" />}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
+                    <p className="text-xs font-bold text-[#007AFF]">{p.prix.toLocaleString('fr-FR')} XOF</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {chambres.length > 0 && (
+        <section className="animate-slide-up" style={{ animationDelay: '0.21s' } as React.CSSProperties}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800"><BedDouble className="w-4 h-4 text-purple-500" /> Chambres disponibles</h2>
+            <Link to="/hotels" className="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1">Voir tout <ArrowRight className="w-3 h-3" /></Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {chambres.map((c) => {
+              const hotel = typeof c.hotel === 'object' ? c.hotel : null;
+              return (
+                <Link key={c._id} to={hotel ? `/hotel/${hotel._id}` : '/hotels'} className="shrink-0 w-36 glass-light rounded-2xl overflow-hidden no-underline hover:shadow-md transition-shadow">
+                  <div className="h-24 bg-slate-100 flex items-center justify-center overflow-hidden">
+                    {c.photos?.[0] ? <img src={c.photos[0]} alt={c.type} className="w-full h-full object-cover" /> : <BedDouble className="w-5 h-5 text-slate-300" />}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{c.type}</p>
+                    <p className="text-xs font-bold text-[#007AFF]">{c.prixParNuit.toLocaleString('fr-FR')} XOF/nuit</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
        {/* ========== GRILLE / LOADING / EMPTY ========== */}      
         {erreurFavori && (
