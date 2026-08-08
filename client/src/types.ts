@@ -217,7 +217,7 @@ export interface DemandeLivraison {
   adresseRecuperation?: Localisation;
   adresseLivraison?: DestinationLivraison;
   tarif: number;
-  statut: 'en_attente' | 'assignée' | 'en_cours' | 'livrée' | 'annulée';
+statut: 'en_attente' | 'assignée' | 'en_cours' | 'en_route' | 'arrivée' | 'livrée' | 'annulée';
   createdAt: string;
 }
 export interface Boutique {

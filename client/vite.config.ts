@@ -42,7 +42,7 @@ export default defineConfig({
           {
             // Les données (annonces, produits, messages...) doivent rester fraîches :
             // on tente toujours le réseau d'abord, avec un repli sur le cache hors-ligne.
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            urlPattern: ({ url }) => (url as { pathname: string }).pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'proxiconnect-api-cache',

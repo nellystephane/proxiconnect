@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  Store, MapPin, Package, ShoppingCart, Plus, Minus, X as XIcon,
+  Store, MapPin, Package, ShoppingCart, Plus, Minus,
   AlertCircle, Loader2, Check, ArrowLeft, MessageCircle
 } from 'lucide-react';
 import API from '../../api/axios';
