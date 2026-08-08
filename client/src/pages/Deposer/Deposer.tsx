@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { X, Plus, Minus, Sparkles, MapPin, Check, ChevronRight, ChevronLeft, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
 import API from '../../api/axios.ts';
+import { Spinner } from '../../components/ui';
 
 // ===== TYPES =====
 interface FormType {
@@ -434,6 +435,74 @@ const TextArea = memo(({
         </div>
       )}
     </FieldWrapper>
+  );
+});
+
+// ===== APERÇU EN TEMPS RÉEL (desktop) =====
+// Reflète l'état du formulaire sous la forme d'une carte proche de celle qui
+// sera visible publiquement (AnnonceCard), sans dépendre d'un _id/createur
+// puisque l'annonce n'existe pas encore côté serveur à ce stade.
+const PreviewAnnonce = memo(({ form }: { form: FormType }) => {
+  const categorieInfo = CATEGORIES.find((c) => c.value === form.categorie);
+  const premierePhoto = form.photos.find((p) => p.url)?.url;
+  const localisationTexte = [form.quartier, form.ville].filter(Boolean).join(', ');
+
+  return (
+    <aside
+      className="hidden lg:flex flex-col w-[300px] flex-shrink-0 border-l border-white/50 bg-white/30 overflow-y-auto"
+      style={{ maxHeight: 'calc(90vh - 0px)' }}
+    >
+      <div className="p-5 pb-3">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Aperçu en direct</p>
+      </div>
+      <div className="px-5 pb-5">
+        <div className="glass rounded-[22px] overflow-hidden">
+          {premierePhoto ? (
+            <div className="h-32 bg-slate-100">
+              <img src={premierePhoto} alt="" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+              <ImageIcon className="w-6 h-6 text-slate-300" />
+            </div>
+          )}
+          <div className="p-3.5 space-y-2">
+            {categorieInfo ? (
+              <span
+                className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: `${categorieInfo.color}1A`, color: categorieInfo.color }}
+              >
+                {categorieInfo.label}
+              </span>
+            ) : (
+              <span className="inline-block text-[10px] font-medium text-slate-300">Catégorie non choisie</span>
+            )}
+            <h4 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2">
+              {form.titre || 'Titre de votre annonce'}
+            </h4>
+            {form.description && (
+              <p className="text-xs text-slate-500 line-clamp-3">{form.description}</p>
+            )}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-900/[0.06]">
+              <span className="text-sm font-bold text-[#007AFF]">
+                {form.estGratuit ? 'Gratuit' : form.montant ? `${Number(form.montant).toLocaleString('fr-FR')} XOF` : '—'}
+              </span>
+              {form.estNegociable && !form.estGratuit && (
+                <span className="text-[9px] text-slate-400 bg-slate-900/[0.05] px-1.5 py-0.5 rounded-full">Négociable</span>
+              )}
+            </div>
+            {localisationTexte && (
+              <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> {localisationTexte}
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-400 mt-3 text-center">
+          Ainsi apparaîtra votre annonce dans le fil et les résultats de recherche.
+        </p>
+      </div>
+    </aside>
   );
 });
 
@@ -1055,15 +1124,15 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
         isClosing ? 'opacity-0' : 'opacity-100'
       }`}
       onClick={handleClose}
     >
       <div
         ref={modalRef}
-        className={`relative w-full max-w-2xl h-dvh md:h-auto md:max-h-[90vh] overflow-hidden glass rounded-t-3xl md:rounded-3xl shadow-2xl transition-all duration-300 ${
-          isClosing ? 'translate-y-8 scale-[0.98] opacity-0' : 'translate-y-0 scale-100 opacity-100'
+        className={`relative w-full max-w-2xl lg:max-w-4xl max-h-[92vh] overflow-hidden glass rounded-3xl shadow-2xl transition-all duration-300 ${
+          isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
         onClick={(e) => e.stopPropagation()}
         style={{ overscrollBehavior: 'contain' }}
@@ -1078,90 +1147,83 @@ const Deposer: React.FC<DeposerProps> = ({ onClose }) => {
 
         {loadingAnnonce ? (
           <div className="flex flex-col items-center justify-center gap-3 py-24">
-            <div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" />
+            <Spinner size="lg" />
             <p className="text-sm text-slate-500">Chargement de votre annonce…</p>
           </div>
         ) : (
-        <>
-        <StepIndicator currentStep={currentStep} onStepClick={goToStep} />
+        <div className="lg:flex">
+          <div className="flex-1 min-w-0">
+            <StepIndicator currentStep={currentStep} onStepClick={goToStep} />
 
-        <div
-          ref={contentRef}
-          className="px-6 pb-6 pt-4 overflow-y-auto"
-          style={{ maxHeight: 'calc(90vh - 120px)', overscrollBehavior: 'contain' }}
-        >
-          {globalError && (
-            <div className="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600 flex items-center gap-2 animate-fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {globalError}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {stepComponents[currentStep]()}
-
-            <div className="flex items-center gap-3 pt-4 border-t border-slate-200/60">
-              {currentStep > 0 && (
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Retour
-                </button>
+            <div
+              ref={contentRef}
+              className="px-6 pb-6 pt-4 overflow-y-auto"
+              style={{ maxHeight: 'calc(90vh - 120px)', overscrollBehavior: 'contain' }}
+            >
+              {globalError && (
+                <div className="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600 flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {globalError}
+                </div>
               )}
 
-              {currentStep < STEPS.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg shadow-blue-200/50"
-                >
-                  Continuer
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    {loading ? (
-                      <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        {isEditMode ? 'Enregistrer les modifications' : "Publier l'annonce"}
-                      </>
-                    )}
-                  </span>
-                  <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </button>
-              )}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {stepComponents[currentStep]()}
+
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-200/60">
+                  {currentStep > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Retour
+                    </button>
+                  )}
+
+                  {currentStep < STEPS.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg shadow-blue-200/50"
+                    >
+                      Continuer
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-4 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 relative overflow-hidden group"
+                    >
+                      <span className="relative z-10 flex items-center gap-2">
+                        {loading ? (
+                          <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            {isEditMode ? 'Enregistrer les modifications' : "Publier l'annonce"}
+                          </>
+                        )}
+                      </span>
+                      <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
+
+          {/* Aperçu en temps réel (desktop uniquement — la modale est trop étroite
+              en mobile pour l'afficher sans nuire au formulaire) */}
+          <PreviewAnnonce form={form} />
         </div>
-        </>
         )}
       </div>
 
       <style>{`
-        .glass {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.6);
-        }
         @media (prefers-reduced-motion: no-preference) {
-          .animate-fade-in {
-            animation: fadeIn 0.2s ease-out forwards;
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
           .animate-step-in {
             animation: stepIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           }

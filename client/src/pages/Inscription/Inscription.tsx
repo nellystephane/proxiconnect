@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, User, Phone, Sparkles, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { Input, Button } from '../../components/ui';
 
 interface FormErrors {
   nom?: string;
@@ -85,11 +86,6 @@ const Inscription = () => {
     }
   };
 
-  const inputClass = (field: keyof FormErrors) =>
-    `w-full pl-10 pr-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2 focus:bg-white ${
-      errors[field] ? 'border border-red-400 focus:ring-red-300' : 'border border-transparent focus:ring-blue-400'
-    }`;
-
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -117,120 +113,53 @@ const Inscription = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Nom</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    name="nom"
-                    value={form.nom}
-                    onChange={handleChange}
-                    className={inputClass('nom')}
-                    placeholder="Kouassi"
-                  />
-                </div>
-                {errors.nom && <p className="text-red-500 text-xs mt-1">{errors.nom}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Prénom</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    name="prenom"
-                    value={form.prenom}
-                    onChange={handleChange}
-                    className={inputClass('prenom')}
-                    placeholder="Amina"
-                  />
-                </div>
-                {errors.prenom && <p className="text-red-500 text-xs mt-1">{errors.prenom}</p>}
-              </div>
+              <Input name="nom" label="Nom" value={form.nom} onChange={handleChange} error={errors.nom} icon={<User className="w-4 h-4" />} placeholder="Kouassi" autoComplete="family-name" />
+              <Input name="prenom" label="Prénom" value={form.prenom} onChange={handleChange} error={errors.prenom} icon={<User className="w-4 h-4" />} placeholder="Amina" autoComplete="given-name" />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  className={inputClass('email')}
-                  placeholder="amina@exemple.com"
-                />
-              </div>
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
+            <Input type="email" name="email" label="Email" value={form.email} onChange={handleChange} error={errors.email} icon={<Mail className="w-4 h-4" />} placeholder="amina@exemple.com" autoComplete="email" />
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Mot de passe</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  name="motDePasse"
-                  value={form.motDePasse}
-                  onChange={handleChange}
-                  className={inputClass('motDePasse')}
-                  placeholder="••••••••"
-                />
-              </div>
-              {errors.motDePasse && <p className="text-red-500 text-xs mt-1">{errors.motDePasse}</p>}
-              <p className="text-[10px] text-gray-400 mt-1">Minimum 6 caractères</p>
-            </div>
+            <Input
+              type="password"
+              name="motDePasse"
+              label="Mot de passe"
+              value={form.motDePasse}
+              onChange={handleChange}
+              error={errors.motDePasse}
+              icon={<Lock className="w-4 h-4" />}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              hint="Minimum 6 caractères"
+            />
 
-            <div>
-            
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">
-                Téléphone <span className="text-gray-400">(optionnel)</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="tel"
-                  name="telephone"
-                  value={form.telephone}
-                  onChange={handleChange}
-                  className={inputClass('telephone')}
-                  placeholder="+229 01 23 45 67 89"
-                />
-              </div>
-              {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone}</p>}
-            </div>
-          
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville <span className="text-red-400">*</span></label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  name="ville"
-                  value={form.ville}
-                  onChange={handleChange}
-                  className={inputClass('ville')}
-                  placeholder="Cotonou"
-                />
-              </div>
-              {errors.ville && <p className="text-red-500 text-xs mt-1">{errors.ville}</p>}
-            </div>
+            <Input
+              type="tel"
+              name="telephone"
+              label={<>Téléphone <span className="text-gray-400 normal-case font-normal">(optionnel)</span></>}
+              value={form.telephone}
+              onChange={handleChange}
+              error={errors.telephone}
+              icon={<Phone className="w-4 h-4" />}
+              placeholder="+229 01 23 45 67 89"
+              autoComplete="tel"
+            />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold text-sm hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  S'inscrire gratuitement
-                </>
-              )}
-            </button>
+            <Input
+              name="ville"
+              label={<>Ville <span className="text-red-400">*</span></>}
+              value={form.ville}
+              onChange={handleChange}
+              error={errors.ville}
+              icon={<MapPin className="w-4 h-4" />}
+              placeholder="Cotonou"
+              autoComplete="address-level2"
+            />
+
+            <Button type="submit" loading={loading} fullWidth icon={!loading ? <Sparkles className="w-4 h-4" /> : undefined}>
+              S'inscrire gratuitement
+            </Button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">

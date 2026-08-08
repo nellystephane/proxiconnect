@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, MapPin, Eye, Clock, Phone, Heart, Star, Pencil, Trash2,
-  ChevronLeft, ChevronRight, ImageOff, AlertCircle, Send, ShieldCheck
+  ChevronLeft, ChevronRight, ImageOff, AlertCircle, Send, ShieldCheck,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useContacter } from '../../hooks/useContacter';
 import API from '../../api/axios';
+import { Spinner, Button, Textarea } from '../../components/ui';
 import { getCategorieColor } from '../../utils/categories';
 import type { Annonce, Avis } from '../../types';
 
@@ -13,6 +16,7 @@ const DetailAnnonce = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isConnected } = useAuth();
+  const { contacter, contactEnCours, contactErreur } = useContacter();
 
   const [annonce, setAnnonce] = useState<Annonce | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,9 +25,11 @@ const DetailAnnonce = () => {
 
   const [avis, setAvis] = useState<Avis[]>([]);
   const [stats, setStats] = useState<{ moyenne: number; total: number }>({ moyenne: 0, total: 0 });
+  const [avisErreur, setAvisErreur] = useState(false);
 
   const [favoris, setFavoris] = useState<string[]>([]);
   const [favoriLoading, setFavoriLoading] = useState(false);
+  const [favoriErreur, setFavoriErreur] = useState('');
 
   const [note, setNote] = useState(5);
   const [commentaire, setCommentaire] = useState('');
@@ -46,13 +52,14 @@ const DetailAnnonce = () => {
   useEffect(() => {
     if (!annonce?.createur?._id) return;
     let annule = false;
+    setAvisErreur(false);
     API.get(`/avis/utilisateur/${annonce.createur._id}`)
       .then(({ data }) => {
         if (annule) return;
         setAvis(data.avis || []);
         setStats(data.stats || { moyenne: 0, total: 0 });
       })
-      .catch(() => {});
+      .catch(() => { if (!annule) setAvisErreur(true); });
     return () => { annule = true; };
   }, [annonce?.createur?._id]);
 
@@ -61,7 +68,7 @@ const DetailAnnonce = () => {
     let annule = false;
     API.get('/users/favoris')
       .then(({ data }) => { if (!annule) setFavoris(data.map((a: Annonce) => a._id)); })
-      .catch(() => {});
+      .catch(() => { if (!annule) setFavoriErreur("Impossible de charger vos favoris pour l'instant."); });
     return () => { annule = true; };
   }, [isConnected]);
 
@@ -76,15 +83,22 @@ const DetailAnnonce = () => {
     if (!annonce) return;
     if (!isConnected) { navigate('/connexion'); return; }
     setFavoriLoading(true);
+    setFavoriErreur('');
+    const etaitFavori = favoris.includes(annonce._id);
+    // Mise à jour optimiste : l'icône réagit tout de suite, avant la réponse serveur.
+    setFavoris((prev) => (etaitFavori ? prev.filter((id) => id !== annonce._id) : [...prev, annonce._id]));
     try {
       const { data } = await API.put(`/users/favoris/${annonce._id}`);
       setFavoris(data.favoris);
     } catch {
-      // silencieux : l'action n'est pas critique
+      // Échec : on annule la mise à jour optimiste et on informe l'utilisateur
+      // au lieu de laisser l'action échouer silencieusement.
+      setFavoris((prev) => (etaitFavori ? [...prev, annonce._id] : prev.filter((id) => id !== annonce._id)));
+      setFavoriErreur("Impossible de mettre à jour vos favoris. Réessayez.");
     } finally {
       setFavoriLoading(false);
     }
-  }, [annonce, isConnected, navigate]);
+  }, [annonce, isConnected, navigate, favoris]);
 
   const handleSupprimer = async () => {
     if (!annonce) return;
@@ -120,7 +134,7 @@ const DetailAnnonce = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -198,6 +212,10 @@ const DetailAnnonce = () => {
           <Heart className={`w-5 h-5 transition-colors ${estFavori ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
         </button>
       </div>
+
+      {favoriErreur && (
+        <p className="text-xs text-red-500 mb-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{favoriErreur}</p>
+      )}
 
       {/* En-tête */}
       <div className="space-y-3 mb-5">
@@ -280,15 +298,31 @@ const DetailAnnonce = () => {
             </div>
           )}
         </div>
-        {isConnected && !estProprietaire && annonce.createur?.telephone && (
-          <a
-            href={`tel:${annonce.createur.telephone}`}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#007AFF] text-white text-sm font-semibold hover:bg-blue-600 transition"
-          >
-            <Phone className="w-4 h-4" /> Appeler
-          </a>
+        {isConnected && !estProprietaire && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => contacter(annonce.createur._id, 'annonce', annonce._id, annonce.titre)}
+              loading={contactEnCours}
+              icon={!contactEnCours ? <MessageCircle className="w-4 h-4" /> : undefined}
+            >
+              Contacter
+            </Button>
+            {annonce.createur?.telephone && (
+              <a
+                href={`tel:${annonce.createur.telephone}`}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#007AFF] text-white text-sm font-semibold hover:bg-blue-600 transition"
+              >
+                <Phone className="w-4 h-4" /> Appeler
+              </a>
+            )}
+          </div>
         )}
       </div>
+
+      {contactErreur && (
+        <p className="text-xs text-red-500 mb-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{contactErreur}</p>
+      )}
 
       {!isConnected && (
         <Link
@@ -319,7 +353,9 @@ const DetailAnnonce = () => {
           Avis {stats.total > 0 && `(${stats.total})`}
         </h3>
 
-        {avis.length === 0 ? (
+        {avisErreur ? (
+          <p className="text-sm text-red-500 mb-4 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />Impossible de charger les avis pour le moment.</p>
+        ) : avis.length === 0 ? (
           <p className="text-sm text-slate-400 mb-4">Aucun avis pour le moment.</p>
         ) : (
           <div className="space-y-3 mb-4">
@@ -349,23 +385,17 @@ const DetailAnnonce = () => {
                 </button>
               ))}
             </div>
-            <textarea
+            <Textarea
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               maxLength={500}
               rows={3}
               placeholder="Partagez votre expérience (optionnel)"
-              className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all resize-none"
             />
             {avisMessage && <p className="text-xs text-slate-500">{avisMessage}</p>}
-            <button
-              type="submit"
-              disabled={envoiAvis}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#007AFF] text-white text-sm font-semibold hover:bg-blue-600 transition disabled:opacity-60"
-            >
-              <Send className="w-4 h-4" />
+            <Button type="submit" loading={envoiAvis} icon={!envoiAvis ? <Send className="w-4 h-4" /> : undefined}>
               {envoiAvis ? 'Envoi…' : "Envoyer l'avis"}
-            </button>
+            </Button>
           </form>
         )}
       </div>

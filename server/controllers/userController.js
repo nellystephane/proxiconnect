@@ -63,7 +63,8 @@ const register = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Cet email est déjà utilisé.' });
     }
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -102,7 +103,8 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -116,7 +118,8 @@ const getProfil = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -162,7 +165,8 @@ const updateProfil = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -204,7 +208,8 @@ const changePassword = async (req, res) => {
     res.json({ message: 'Mot de passe modifié avec succès.' });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -227,7 +232,8 @@ const deleteAccount = async (req, res) => {
     res.json({ message: 'Compte supprimé avec succès.' });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -256,7 +262,8 @@ const toggleFavori = async (req, res) => {
     res.json({ favoris: user.favoris, estFavori: !dejaFavori });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -272,7 +279,8 @@ const getFavoris = async (req, res) => {
     res.json(user.favoris);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

@@ -83,7 +83,8 @@ const createAnnonce = async (req, res) => {
     res.status(201).json(annonce);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -91,7 +92,7 @@ const createAnnonce = async (req, res) => {
 // GET /api/annonces
 const getAnnonces = async (req, res) => {
   try {
-    const { categorie, ville, type, q } = req.query;
+    const { categorie, ville, type, q, prixMin, prixMax, tri } = req.query;
     const { page, limite } = normaliserPagination(req.query.page, req.query.limite);
 
     await marquerAnnoncesExpirees();
@@ -102,12 +103,24 @@ const getAnnonces = async (req, res) => {
     if (type) filtre.type = type;
     if (ville) filtre['localisation.ville'] = { $regex: ville, $options: 'i' };
     if (q) filtre.$text = { $search: q };
+    if (prixMin || prixMax) {
+      filtre['prix.montant'] = {};
+      if (prixMin) filtre['prix.montant'].$gte = Number(prixMin);
+      if (prixMax) filtre['prix.montant'].$lte = Number(prixMax);
+    }
+
+    const tris = {
+      recent: { estMiseEnAvant: -1, createdAt: -1 },
+      prix_asc: { 'prix.montant': 1, createdAt: -1 },
+      prix_desc: { 'prix.montant': -1, createdAt: -1 }
+    };
+    const triApplique = tris[tri] || tris.recent;
 
     const skip = (page - 1) * limite;
 
     const annonces = await Annonce.find(filtre)
       .populate('createur', 'nom prenom photo telephone')
-      .sort({ estMiseEnAvant: -1, createdAt: -1 })
+      .sort(triApplique)
       .skip(skip)
       .limit(limite);
 
@@ -121,7 +134,8 @@ const getAnnonces = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -149,7 +163,8 @@ const getAnnonceById = async (req, res) => {
     res.json(annonce);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -189,7 +204,8 @@ const updateAnnonce = async (req, res) => {
     res.json(updated);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -215,7 +231,8 @@ const deleteAnnonce = async (req, res) => {
     res.json({ message: 'Annonce supprimée avec succès.' });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -240,7 +257,8 @@ const getMesAnnonces = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

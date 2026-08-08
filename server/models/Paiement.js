@@ -10,8 +10,21 @@ const paiementSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ['abonnement_30j', 'abonnement_90j', 'abonnement_annuel'],
+    enum: ['abonnement_30j', 'abonnement_90j', 'abonnement_annuel', 'pro_mensuel', 'pro_annuel'],
     required: true
+  },
+
+  // ─── Abonnement "Pro" d'un espace métier (Vente/Restauration/Hôtel/Livraison) ───
+  // Distinct de l'abonnement annonces classique ci-dessus : null pour un
+  // paiement d'abonnement annonces, renseigné pour un paiement Pro d'espace.
+  espaceType: {
+    type: String,
+    enum: ['vente', 'restauration', 'hotel', 'livraison', null],
+    default: null
+  },
+  espaceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
   },
 
   avantages: {

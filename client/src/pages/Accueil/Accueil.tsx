@@ -170,16 +170,18 @@ const Accueil = () => {
     <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       
       {/* ===== BACKGROUND LUMIÈRE & TEXTURE ===== */}
+      {/* Trio de halos "liquid glass" (bleu / indigo / menthe) — bas-contraste
+          pour ne jamais fatiguer l'œil, avec un très léger parallax souris. */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
-          className="absolute top-[-10%] left-[15%] h-[500px] w-[500px] rounded-full bg-blue-200/40 blur-[120px] animate-float-slow"
+          className="absolute top-[-10%] left-[15%] h-[500px] w-[500px] rounded-full bg-blue-300/25 blur-[130px] animate-float-slow"
           style={{ transform: `translate(${mousePosition.x * 20}px, ${mousePosition.y * 20}px)`, transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.320, 1)' }}
         />
         <div
-          className="absolute bottom-[-5%] right-[10%] h-[450px] w-[450px] rounded-full bg-indigo-200/40 blur-[100px] animate-float-delayed"
+          className="absolute bottom-[-5%] right-[10%] h-[450px] w-[450px] rounded-full bg-indigo-300/25 blur-[110px] animate-float-delayed"
           style={{ transform: `translate(${mousePosition.x * -15}px, ${mousePosition.y * -15}px)`, transition: 'transform 0.4s cubic-bezier(0.23, 1, 0.320, 1)' }}
         />
-        <div className="absolute top-[40%] left-[50%] h-[300px] w-[300px] rounded-full bg-sky-200/30 blur-[80px] animate-pulse-slow" />
+        <div className="absolute top-[42%] left-[52%] h-[320px] w-[320px] rounded-full bg-teal-200/20 blur-[90px] animate-pulse-slow" />
         <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' result=\'noise\'/%3E%3C/filter%3E%3Crect width=\'100%\' height=\'100%\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")', backgroundSize: '120px 120px' }} />
       </div>
 
@@ -188,8 +190,11 @@ const Accueil = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group" onClick={(e) => handleNavClick(e, '#hero')}>
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#007AFF] shadow-lg shadow-blue-500/20 transition-transform duration-300 group-hover:scale-105">
-                <MapPin className="w-5 h-5 text-white" />
+              <div
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-white transition-transform duration-300 group-hover:scale-105"
+                style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--glass-specular), var(--shadow-glow-primary)' }}
+              >
+                <MapPin className="w-5 h-5" strokeWidth={2.4} />
               </div>
               <span className="text-xl font-bold tracking-tight text-slate-900">Proxi<span className="text-[#007AFF]">Connect</span></span>
             </Link>
@@ -206,14 +211,14 @@ const Accueil = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/connexion" className="text-sm font-medium text-slate-600 hover:text-[#007AFF] transition-colors px-4 py-2 rounded-lg hover:bg-slate-100">Se connecter</Link>
-              <Link to="/inscription" className="inline-flex items-center gap-2 rounded-full bg-[#007AFF] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/35 hover:-translate-y-0.5 active:translate-y-0">
+              <Link to="/connexion" className="text-sm font-medium text-slate-600 hover:text-[#007AFF] transition-colors px-4 py-2 rounded-lg hover:bg-black/[0.04]">Se connecter</Link>
+              <Link to="/inscription" className="btn-liquid-primary rounded-full px-6 py-2.5 text-sm no-underline">
                 S'inscrire gratuitement <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* Mobile Menu Toggle */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="glass-light lg:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:border-blue-300 hover:bg-blue-50" aria-label="Menu mobile">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="glass-light lg:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-90 hover:bg-[#007AFF]/8" aria-label="Menu mobile">
               {mobileMenuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
             </button>
           </div>
@@ -226,8 +231,8 @@ const Accueil = () => {
               <a key={link.label} href={link.href} onClick={(e) => handleNavClick(e, link.href)} className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-[#007AFF] transition-colors">{link.label}</a>
             ))}
             <div className="border-t border-slate-100 my-2 pt-2 space-y-2">
-              <Link to="/connexion" className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-center">Se connecter</Link>
-              <Link to="/inscription" className="block rounded-xl px-4 py-3 text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors text-center shadow-md shadow-blue-500/20">Créer un compte</Link>
+              <Link to="/connexion" className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-black/[0.04] transition-colors text-center">Se connecter</Link>
+              <Link to="/inscription" className="btn-liquid-primary block rounded-xl px-4 py-3 text-sm text-center no-underline">Créer un compte</Link>
             </div>
           </div>
         </div>
@@ -252,12 +257,11 @@ const Accueil = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto pt-2">
-            <Link to="/inscription" className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-[#007AFF] px-8 py-4 text-base font-semibold text-white shadow-xl shadow-blue-500/25 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0">
-              <span className="relative z-10">Commencer gratuitement</span>
-              <ArrowRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <Link to="/inscription" className="btn-liquid-primary group rounded-full px-8 py-4 text-base no-underline">
+              <span>Commencer gratuitement</span>
+              <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
-            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="glass-pill group inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-slate-700 transition-all duration-500 hover:border-blue-400/50 hover:bg-blue-50/60 hover:text-[#007AFF] hover:-translate-y-1 active:translate-y-0">
+            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="btn-liquid-ghost group rounded-full px-8 py-4 text-base no-underline hover:text-[#007AFF]">
               Explorer les annonces <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </a>
           </div>
@@ -409,7 +413,7 @@ const Accueil = () => {
 
         {/* ========== STATS / CONFIANCE ========== */}
         <section className="animate-on-scroll">
-          <div className="relative rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white via-slate-50 to-white p-10 sm:p-14 text-center overflow-hidden shadow-xl shadow-slate-200/40">
+          <div className="glass-solid relative rounded-[26px] p-10 sm:p-14 text-center overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50/80 via-transparent to-transparent pointer-events-none" />
             <div className="relative grid grid-cols-2 md:grid-cols-4 gap-8">
               {[
@@ -429,20 +433,20 @@ const Accueil = () => {
 
         {/* ========== CTA FINAL ========== */}
         <section className="animate-on-scroll">
-          <div className="relative rounded-3xl border border-white/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 p-10 sm:p-16 text-center overflow-hidden backdrop-blur-sm">
-            <div className="absolute top-[-40%] right-[-10%] w-72 h-72 bg-blue-200/30 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
-            <div className="absolute bottom-[-20%] left-[-5%] w-56 h-56 bg-indigo-200/25 rounded-full blur-3xl animate-float-delayed pointer-events-none" />
-            
+          <div className="glass-solid relative rounded-[26px] p-10 sm:p-16 text-center overflow-hidden">
+            <div className="absolute top-[-40%] right-[-10%] w-72 h-72 bg-blue-300/25 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
+            <div className="absolute bottom-[-20%] left-[-5%] w-56 h-56 bg-indigo-300/20 rounded-full blur-3xl animate-float-delayed pointer-events-none" />
+
             <div className="relative z-10 space-y-8">
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 max-w-3xl mx-auto">
                 Votre quartier a besoin de vos talents.<br />
                 <span className="text-[#007AFF]">Rejoignez la communauté dès aujourd'hui.</span>
               </h2>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/inscription" className="group inline-flex items-center gap-2 rounded-full bg-[#007AFF] px-10 py-4 text-base font-semibold text-white shadow-xl shadow-blue-500/25 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0">
+                <Link to="/inscription" className="btn-liquid-primary group rounded-full px-10 py-4 text-base no-underline">
                   Créer un compte gratuit <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
-                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="glass-pill inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-slate-700 transition-all duration-500 hover:border-blue-400/50 hover:text-[#007AFF]">
+                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="btn-liquid-ghost rounded-full px-8 py-4 text-base no-underline hover:text-[#007AFF]">
                   Voir comment ça marche
                 </a>
               </div>
@@ -458,8 +462,8 @@ const Accueil = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             <div className="md:col-span-2 space-y-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#007AFF] shadow-md">
-                  <MapPin className="w-4 h-4 text-white" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg text-white" style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--glass-specular), var(--shadow-glow-primary)' }}>
+                  <MapPin className="w-4 h-4" strokeWidth={2.4} />
                 </div>
                 <span className="text-lg font-bold text-slate-900">ProxiConnect</span>
               </div>
@@ -502,8 +506,6 @@ const Accueil = () => {
 
       {/* ===== GLOBAL STYLES & ANIMATIONS ===== */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        * { font-family: 'Inter', sans-serif; }
         html { scroll-behavior: smooth; scroll-padding-top: 85px; }
         
         .animate-on-scroll {
@@ -535,11 +537,6 @@ const Accueil = () => {
           .animate-spin-slow { animation: spin 8s linear infinite; }
           @keyframes spin { to { transform: rotate(360deg); } }
         }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.3); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.5); }
       `}</style>
     </div>
   );

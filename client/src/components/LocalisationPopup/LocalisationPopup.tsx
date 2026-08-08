@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { MapPin, X, Check } from 'lucide-react';
+import { MapPin, Check } from 'lucide-react';
+import { Modal, Input, Textarea, Button } from '../ui';
 
 export interface LocalisationValue {
   pays: string;
@@ -38,19 +39,6 @@ const LocalisationPopup: React.FC<LocalisationPopupProps> = ({ open, initialValu
     }
   }, [open, initialValue]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleEsc);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = '';
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const handleValidate = () => {
     if (!ville.trim()) {
       setError('La ville est obligatoire.');
@@ -61,88 +49,46 @@ const LocalisationPopup: React.FC<LocalisationPopupProps> = ({ open, initialValu
   };
 
   return (
-    <div
-      className="glass-overlay fixed inset-0 z-[70] flex items-end md:items-center justify-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto glass rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="glass-modal sticky top-0 z-10 flex items-center justify-between border-b border-white/30 px-6 py-4 rounded-t-3xl">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#007AFF]" />
-            <h2 className="text-base font-semibold text-slate-900">Localisation</h2>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 transition">
-            <X className="w-4 h-4 text-slate-500" />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Décrivez votre localisation avec vos propres repères : quartier, rue, ou point de repère connu à proximité.
-          </p>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Pays</label>
-            <input
-              value={pays}
-              onChange={(e) => setPays(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Ville *</label>
-            <input
-              value={ville}
-              onChange={(e) => { setVille(e.target.value); setError(''); }}
-              list="villes-suggestions"
-              placeholder="Cotonou"
-              className={`w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:bg-white transition-all ${
-                error ? 'border border-red-400 focus:ring-red-300' : 'border border-transparent focus:ring-blue-400'
-              }`}
-            />
-            <datalist id="villes-suggestions">
-              {VILLES_SUGGESTIONS.map((v) => <option key={v} value={v} />)}
-            </datalist>
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Quartier</label>
-            <input
-              value={quartier}
-              onChange={(e) => setQuartier(e.target.value)}
-              placeholder="Akpakpa"
-              className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">
-              Précisions <span className="text-gray-400 normal-case">(points de repère)</span>
-            </label>
-            <textarea
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              rows={3}
-              placeholder="À côté de la pharmacie Saint-Jean, 2e rue à droite"
-              className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all resize-none"
-            />
-          </div>
-
-          <button
-            onClick={handleValidate}
-            className="w-full py-3 bg-[#007AFF] text-white rounded-xl font-semibold text-sm hover:bg-blue-600 transition flex items-center justify-center gap-2"
-          >
-            <Check className="w-4 h-4" />
-            Valider la localisation
-          </button>
-        </div>
+    <Modal open={open} onClose={onClose} size="md">
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="w-4 h-4 text-[#007AFF]" aria-hidden="true" />
+        <h2 className="text-base font-semibold text-slate-900">Localisation</h2>
       </div>
-    </div>
+      <p className="text-xs text-slate-500 leading-relaxed mb-4">
+        Décrivez votre localisation avec vos propres repères : quartier, rue, ou point de repère connu à proximité.
+      </p>
+
+      <div className="space-y-4">
+        <Input label="Pays" value={pays} onChange={(e) => setPays(e.target.value)} />
+
+        <div>
+          <Input
+            label="Ville *"
+            value={ville}
+            onChange={(e) => { setVille(e.target.value); setError(''); }}
+            list="villes-suggestions"
+            placeholder="Cotonou"
+            error={error}
+          />
+          <datalist id="villes-suggestions">
+            {VILLES_SUGGESTIONS.map((v) => <option key={v} value={v} />)}
+          </datalist>
+        </div>
+
+        <Input label="Quartier" value={quartier} onChange={(e) => setQuartier(e.target.value)} placeholder="Akpakpa" />
+
+        <Textarea
+          label={<>Précisions <span className="text-gray-400 normal-case">(points de repère)</span></>}
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="À côté de la pharmacie Saint-Jean, 2e rue à droite"
+        />
+
+        <Button onClick={handleValidate} fullWidth icon={<Check className="w-4 h-4" />}>
+          Valider la localisation
+        </Button>
+      </div>
+    </Modal>
   );
 };
 

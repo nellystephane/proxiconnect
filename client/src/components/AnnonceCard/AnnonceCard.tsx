@@ -27,30 +27,32 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
   return (
     <Link
       to={`/annonces/${annonce._id}`}
-      className="group glass relative w-full block rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
+      className="group glass relative w-full block rounded-[22px] overflow-hidden cursor-pointer transition-all duration-300 ease-[var(--ease-smooth)] hover:-translate-y-1 active:scale-[0.985]"
       style={{
-        boxShadow: `0 12px 30px -8px ${categoryColor}60, 0 4px 6px rgba(0,0,0,0.05)`,
+        boxShadow: `var(--glass-specular), 0 16px 34px -12px ${categoryColor}55, var(--shadow-sm)`,
       }}
       aria-label={`Voir les détails : ${annonce.titre}`}
     >
       {/* Photo */}
       {hasPhotos ? (
-        <div className="relative h-40 bg-slate-100">
+        <div className="relative h-40 bg-slate-100 overflow-hidden">
           <img
             src={annonce.photos[0]}
             alt={annonce.titre}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 ease-[var(--ease-smooth)] group-hover:scale-[1.06]"
             loading="lazy"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
             }}
           />
+          {/* Voile dégradé bas pour la lisibilité du badge photos, sans assombrir toute l'image */}
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center bg-slate-100 hidden">
             <ImageIcon className="w-8 h-8 text-slate-300" />
           </div>
           {annonce.photos.length > 1 && (
-            <div className="absolute bottom-2 right-2 bg-black/40 text-white text-xs px-2 py-0.5 rounded-full">
+            <div className="absolute bottom-2 right-2 bg-black/45 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
               +{annonce.photos.length - 1}
             </div>
           )}
@@ -64,7 +66,7 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
       {onToggleFavori && (
         <button
           onClick={handleFavoriClick}
-          className="glass-control absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/95 transition"
+          className="glass-control absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center"
           aria-label={estFavori ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
           <Heart className={`w-4 h-4 transition-colors ${estFavori ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
@@ -74,7 +76,10 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
       {/* Contenu */}
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#007AFF] text-xs font-bold">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#007AFF] text-xs font-bold shrink-0"
+            style={{ background: 'linear-gradient(135deg, rgba(10,132,255,0.14), rgba(94,92,230,0.14))' }}
+          >
             {annonce.createur?.prenom?.charAt(0) || '?'}
           </div>
           <div className="min-w-0">
@@ -93,13 +98,13 @@ const AnnonceCard = ({ annonce, estFavori, onToggleFavori }: AnnonceCardProps) =
           <p className="text-xs text-slate-500 line-clamp-2">{annonce.description}</p>
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-900/[0.06]">
           <div>
             <span className="text-lg font-bold text-[#007AFF]">
               {annonce.prix.estGratuit ? 'Gratuit' : `${annonce.prix.montant.toLocaleString('fr-FR')} XOF`}
             </span>
             {annonce.prix.estNegociable && !annonce.prix.estGratuit && (
-              <span className="ml-2 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Négociable</span>
+              <span className="ml-2 text-[10px] text-slate-400 bg-slate-900/[0.05] px-2 py-0.5 rounded-full">Négociable</span>
             )}
           </div>
           <div className="flex items-center gap-3 text-[10px] text-slate-400">

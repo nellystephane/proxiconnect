@@ -51,7 +51,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
 
   return (
     <div className="flex items-center gap-3">
-      <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center relative">
+      <div className="w-14 h-14 rounded-xl overflow-hidden glass-light flex items-center justify-center relative">
         {currentImage ? (
           <img src={currentImage} alt="Preview" className="w-full h-full object-cover" />
         ) : (
@@ -75,7 +75,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImage, onUpload })
       <button
         type="button"
         onClick={triggerFileInput}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 text-[#007AFF] text-sm font-semibold hover:bg-blue-100 transition-all duration-200 active:scale-95"
       >
         <UploadCloud className="w-4 h-4" />
         {currentImage ? 'Changer' : 'Ajouter une photo'}

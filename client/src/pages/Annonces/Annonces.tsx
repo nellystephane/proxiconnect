@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, X, PackageSearch, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, X, PackageSearch, Loader2, AlertCircle } from 'lucide-react';
 import API from '../../api/axios';
+import { Skeleton, EmptyState } from '../../components/ui';
 import AnnonceCard from '../../components/AnnonceCard/AnnonceCard';
 import { useAuth } from '../../context/AuthContext';
 import { CATEGORIES } from '../../utils/categories';
@@ -54,14 +55,20 @@ const Annonces = () => {
       .catch(() => {});
   }, [isConnected]);
 
+  const [erreurFavori, setErreurFavori] = useState('');
+
   const toggleFavori = useCallback(async (annonceId: string) => {
+    setErreurFavori('');
+    const etaitFavori = favoris.includes(annonceId);
+    setFavoris((prev) => (etaitFavori ? prev.filter((id) => id !== annonceId) : [...prev, annonceId]));
     try {
       const { data } = await API.put(`/users/favoris/${annonceId}`);
       setFavoris(data.favoris);
     } catch {
-      // silencieux
+      setFavoris((prev) => (etaitFavori ? [...prev, annonceId] : prev.filter((id) => id !== annonceId)));
+      setErreurFavori("Impossible de mettre à jour vos favoris. Réessayez.");
     }
-  }, []);
+  }, [favoris]);
 
   useEffect(() => {
     if (categorie) setSearchParams({ categorie }); else setSearchParams({});
@@ -98,6 +105,10 @@ const Annonces = () => {
           <SlidersHorizontal className="w-4 h-4" />
         </button>
       </form>
+
+      {erreurFavori && (
+        <p className="text-xs text-red-500 mb-4 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{erreurFavori}</p>
+      )}
 
       {showFiltres && (
         <div className="glass mb-4 p-4 rounded-xl animate-fade-in">
@@ -138,13 +149,13 @@ const Annonces = () => {
       {/* Résultats */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-64 rounded-2xl bg-slate-100 animate-pulse" />)}
+          <Skeleton className="h-64 rounded-2xl" count={4} />
         </div>
       ) : annonces.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-          <PackageSearch className="w-10 h-10 text-slate-300" />
-          <p className="text-slate-500 font-medium">Aucune annonce ne correspond à votre recherche.</p>
-          {(recherche || ville || categorie) && (
+        <EmptyState
+          icon={PackageSearch}
+          title="Aucune annonce ne correspond à votre recherche."
+          action={(recherche || ville || categorie) && (
             <button
               onClick={() => { setRecherche(''); setVille(''); setCategorie(''); }}
               className="text-sm font-semibold text-[#007AFF] hover:underline flex items-center gap-1"
@@ -152,7 +163,7 @@ const Annonces = () => {
               <X className="w-3.5 h-3.5" /> Réinitialiser les filtres
             </button>
           )}
-        </div>
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

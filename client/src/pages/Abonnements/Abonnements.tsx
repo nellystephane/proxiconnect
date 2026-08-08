@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Check, Crown, Video, Star, Zap, ArrowLeft, Smartphone,
-  AlertCircle, X as XIcon, Loader2
+  AlertCircle, X as XIcon, RotateCcw
 } from 'lucide-react';
 import API from '../../api/axios';
-import type { Offre, AbonnementStatut } from '../../types';
+import { Spinner, Modal, Card, Button, Input } from '../../components/ui';
+import type { Offre, AbonnementStatut, Paiement } from '../../types';
 
 const OPERATEURS = [
   { id: 'orange_money', label: 'Orange Money' },
@@ -22,6 +23,14 @@ const ICONES_OFFRE: Record<string, React.ElementType> = {
   abonnement_annuel: Video,
 };
 
+// Le paiement reste "en_attente" tant que l'opérateur Mobile Money n'a pas
+// confirmé la transaction. On interroge le statut à intervalle régulier et on
+// abandonne au bout de ce délai si rien n'a été confirmé côté opérateur.
+const INTERVALLE_POLLING_MS = 3000;
+const DELAI_MAX_MS = 120000; // 2 minutes
+
+type EtapePaiement = 'formulaire' | 'attente' | 'succes' | 'echec';
+
 const Abonnements = () => {
   const navigate = useNavigate();
   const [offres, setOffres] = useState<Offre[]>([]);
@@ -31,10 +40,13 @@ const Abonnements = () => {
   const [offreChoisie, setOffreChoisie] = useState<Offre | null>(null);
   const [operateur, setOperateur] = useState('orange_money');
   const [numero, setNumero] = useState('');
-  const [etapePaiement, setEtapePaiement] = useState<'formulaire' | 'confirmation' | 'succes'>('formulaire');
-  const [paiementId, setPaiementId] = useState<string | null>(null);
+  const [etape, setEtape] = useState<EtapePaiement>('formulaire');
+  const [secondesEcoulees, setSecondesEcoulees] = useState(0);
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
+
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const debutAttenteRef = useRef<number>(0);
 
   useEffect(() => {
     Promise.all([
@@ -46,13 +58,65 @@ const Abonnements = () => {
     }).finally(() => setLoading(false));
   }, []);
 
+  const arreterPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  // Nettoyage si le composant se démonte pendant une attente en cours
+  useEffect(() => () => arreterPolling(), [arreterPolling]);
+
   const ouvrirPaiement = (offre: Offre) => {
     if (offre.type === 'gratuit') return;
+    arreterPolling();
     setOffreChoisie(offre);
-    setEtapePaiement('formulaire');
+    setEtape('formulaire');
     setErreur('');
     setNumero('');
   };
+
+  const fermerModale = () => {
+    arreterPolling();
+    setOffreChoisie(null);
+  };
+
+  const demarrerPolling = useCallback((id: string) => {
+    debutAttenteRef.current = Date.now();
+    setSecondesEcoulees(0);
+    arreterPolling();
+
+    pollingRef.current = setInterval(async () => {
+      const ecoule = Date.now() - debutAttenteRef.current;
+      setSecondesEcoulees(Math.floor(ecoule / 1000));
+
+      if (ecoule >= DELAI_MAX_MS) {
+        arreterPolling();
+        setErreur("Nous n'avons pas reçu de confirmation de l'opérateur à temps. Réessayez ou vérifiez votre téléphone.");
+        setEtape('echec');
+        return;
+      }
+
+      try {
+        const { data } = await API.get<Paiement>(`/paiements/${id}`);
+        if (data.statut === 'confirmé') {
+          arreterPolling();
+          setEtape('succes');
+          const { data: statutData } = await API.get('/paiements/statut');
+          setStatut(statutData);
+        } else if (data.statut === 'échoué' || data.statut === 'expiré') {
+          arreterPolling();
+          setErreur("Le paiement a été refusé ou a expiré du côté de l'opérateur.");
+          setEtape('echec');
+        }
+        // 'en_attente' → on continue de sonder
+      } catch {
+        // Erreur réseau ponctuelle : on retente au prochain intervalle,
+        // on ne fait échouer le paiement que sur le timeout global.
+      }
+    }, INTERVALLE_POLLING_MS);
+  }, [arreterPolling]);
 
   const handleInitierPaiement = async () => {
     if (!offreChoisie) return;
@@ -69,34 +133,24 @@ const Abonnements = () => {
         operateur,
         numeroTransaction: numero,
       });
-      setPaiementId(data._id);
-      setEtapePaiement('confirmation');
+      setEtape('attente');
+      demarrerPolling(data._id);
     } catch (err: any) {
-      setErreur(err.response?.data?.message || 'Erreur lors de l\'initialisation du paiement.');
+      setErreur(err.response?.data?.message || "Erreur lors de l'initialisation du paiement.");
     } finally {
       setEnvoi(false);
     }
   };
 
-  const handleConfirmerDemo = async () => {
-    if (!paiementId) return;
-    setEnvoi(true);
-    try {
-      await API.put(`/paiements/${paiementId}/simuler`);
-      setEtapePaiement('succes');
-      const { data } = await API.get('/paiements/statut');
-      setStatut(data);
-    } catch (err: any) {
-      setErreur(err.response?.data?.message || 'Erreur lors de la confirmation.');
-    } finally {
-      setEnvoi(false);
-    }
+  const handleReessayer = () => {
+    setErreur('');
+    setEtape('formulaire');
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -121,27 +175,28 @@ const Abonnements = () => {
           const Icone = ICONES_OFFRE[offre.type] || Star;
           const estActive = statut?.type === offre.type || (offre.type === 'gratuit' && !statut?.estAbonne);
           const estAnnuel = offre.type === 'abonnement_annuel';
+          const nombreIllimite = offre.avantages.nombreAnnonces >= 999999;
 
           return (
-            <div
+            <Card
               key={offre.type}
-              className={`relative p-5 rounded-2xl border transition-all ${
-                estAnnuel ? 'border-[#007AFF] bg-blue-50/40 shadow-lg shadow-blue-100' : 'border-slate-200 bg-white'
-              } ${estActive ? 'ring-2 ring-[#007AFF]' : ''}`}
+              variant={estAnnuel ? 'glass-solid' : 'glass'}
+              interactive
+              className={`relative !rounded-2xl p-5 ${estAnnuel ? 'shadow-lg' : ''} ${estActive ? 'ring-2 ring-[#007AFF]' : ''}`}
             >
               {estAnnuel && (
-                <span className="absolute -top-3 left-5 text-[10px] font-bold uppercase tracking-wide bg-[#007AFF] text-white px-2.5 py-1 rounded-full">
+                <span className="absolute -top-3 left-5 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-full btn-liquid-primary">
                   Meilleure offre
                 </span>
               )}
               {estActive && (
-                <span className="absolute -top-3 right-5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white px-2.5 py-1 rounded-full">
+                <span className="absolute -top-3 right-5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-sm">
                   Offre actuelle
                 </span>
               )}
 
               <div className="flex items-center gap-2 mb-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${estAnnuel ? 'bg-[#007AFF] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${estAnnuel ? 'bg-[#007AFF] text-white' : 'glass-light text-slate-500'}`}>
                   <Icone className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-slate-900">{offre.label}</h3>
@@ -155,7 +210,9 @@ const Abonnements = () => {
               <ul className="space-y-2 mb-5 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  {offre.avantages.nombreAnnonces} annonce{offre.avantages.nombreAnnonces > 1 ? 's' : ''} active{offre.avantages.nombreAnnonces > 1 ? 's' : ''}
+                  {nombreIllimite
+                    ? 'Annonces illimitées'
+                    : `${offre.avantages.nombreAnnonces} annonce${offre.avantages.nombreAnnonces > 1 ? 's' : ''} active${offre.avantages.nombreAnnonces > 1 ? 's' : ''}`}
                 </li>
                 <li className={`flex items-center gap-2 ${!offre.avantages.videoAutorisee ? 'text-slate-300' : ''}`}>
                   {offre.avantages.videoAutorisee ? <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <XIcon className="w-4 h-4 flex-shrink-0" />}
@@ -168,17 +225,16 @@ const Abonnements = () => {
               </ul>
 
               {offre.type !== 'gratuit' && (
-                <button
+                <Button
                   onClick={() => ouvrirPaiement(offre)}
                   disabled={estActive}
-                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                    estAnnuel ? 'bg-[#007AFF] text-white hover:bg-blue-600' : 'bg-slate-900 text-white hover:bg-slate-800'
-                  }`}
+                  variant={estAnnuel ? 'primary' : 'ghost'}
+                  fullWidth
                 >
                   {estActive ? 'Offre active' : "S'abonner"}
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -188,38 +244,31 @@ const Abonnements = () => {
         Carte bancaire et virement bientôt disponibles.
       </p>
 
-      {/* Modale de paiement */}
+      {/* Modale de paiement, centrée */}
       {offreChoisie && (
-        <div
-          className="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={() => setOffreChoisie(null)}
+        <Modal
+          open
+          onClose={etape === 'attente' ? undefined : fermerModale}
+          title={`Abonnement ${offreChoisie.label}`}
         >
-          <div
-            className="w-full max-w-md glass rounded-t-3xl md:rounded-3xl shadow-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-slate-900">Abonnement {offreChoisie.label}</h2>
-              <button onClick={() => setOffreChoisie(null)} className="p-1.5 rounded-full hover:bg-slate-100">
-                <XIcon className="w-4 h-4 text-slate-500" />
-              </button>
-            </div>
 
-            {etapePaiement === 'formulaire' && (
+            {etape === 'formulaire' && (
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">
                   Montant à payer : <span className="font-bold text-slate-900">{offreChoisie.prix.toLocaleString('fr-FR')} XOF</span>
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">Opérateur</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wider">Opérateur</label>
                   <div className="grid grid-cols-2 gap-2">
                     {OPERATEURS.map((op) => (
                       <button
                         key={op.id}
                         onClick={() => setOperateur(op.id)}
-                        className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition ${
-                          operateur === op.id ? 'border-[#007AFF] bg-blue-50 text-[#007AFF]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 ${
+                          operateur === op.id
+                            ? 'border-[#007AFF]/40 bg-blue-50 text-[#007AFF] shadow-sm'
+                            : 'glass-light border-transparent text-slate-600 hover:bg-white/60'
                         }`}
                       >
                         {op.label}
@@ -228,75 +277,71 @@ const Abonnements = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Numéro Mobile Money</label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      value={numero}
-                      onChange={(e) => setNumero(e.target.value)}
-                      placeholder="01 23 45 67 89"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="Numéro Mobile Money"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="01 23 45 67 89"
+                  icon={<Smartphone className="w-4 h-4" />}
+                />
 
                 {erreur && (
                   <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{erreur}</p>
                 )}
 
-                <button
+                <Button
                   onClick={handleInitierPaiement}
                   disabled={envoi}
-                  className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                  loading={envoi}
+                  fullWidth
                 >
-                  {envoi && <Loader2 className="w-4 h-4 animate-spin" />}
                   Payer {offreChoisie.prix.toLocaleString('fr-FR')} XOF
-                </button>
+                </Button>
               </div>
             )}
 
-            {etapePaiement === 'confirmation' && (
+            {etape === 'attente' && (
               <div className="space-y-4 text-center">
-                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center">
+                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center relative">
                   <Smartphone className="w-6 h-6 text-[#007AFF]" />
+                  <span className="absolute inset-0 rounded-full border-2 border-[#007AFF]/30 border-t-[#007AFF] animate-spin" />
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed">
                   Une demande de paiement a été envoyée à votre numéro <span className="font-semibold">{numero}</span> via {OPERATEURS.find(o => o.id === operateur)?.label}.
-                  Confirmez la transaction sur votre téléphone.
+                  Validez la transaction directement sur votre téléphone.
                 </p>
-                <p className="text-xs text-slate-400 italic">
-                  Mode démonstration : l'intégration réelle des opérateurs Mobile Money sera branchée ici. En attendant, confirmez manuellement ci-dessous pour tester le parcours.
+                <p className="text-xs text-slate-400">
+                  En attente de confirmation… {secondesEcoulees}s
                 </p>
-                {erreur && <p className="text-xs text-red-500">{erreur}</p>}
-                <button
-                  onClick={handleConfirmerDemo}
-                  disabled={envoi}
-                  className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {envoi && <Loader2 className="w-4 h-4 animate-spin" />}
-                  J'ai confirmé le paiement
-                </button>
               </div>
             )}
 
-            {etapePaiement === 'succes' && (
+            {etape === 'echec' && (
+              <div className="space-y-4 text-center py-2">
+                <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="w-7 h-7 text-red-500" />
+                </div>
+                <p className="font-semibold text-slate-900">Paiement non confirmé</p>
+                <p className="text-sm text-slate-500">{erreur}</p>
+                <Button onClick={handleReessayer} fullWidth icon={<RotateCcw className="w-4 h-4" />}>
+                  Réessayer
+                </Button>
+              </div>
+            )}
+
+            {etape === 'succes' && (
               <div className="space-y-4 text-center py-2">
                 <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                   <Check className="w-7 h-7 text-emerald-500" />
                 </div>
                 <p className="font-semibold text-slate-900">Abonnement activé avec succès !</p>
                 <p className="text-sm text-slate-500">Vos nouveaux avantages sont disponibles dès maintenant.</p>
-                <button
-                  onClick={() => { setOffreChoisie(null); navigate('/profil'); }}
-                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition"
-                >
+                <Button onClick={() => { fermerModale(); navigate('/profil'); }} fullWidth>
                   Retour au profil
-                </button>
+                </Button>
               </div>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
