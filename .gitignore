@@ -9,3 +9,7 @@ node_modules/
 
 # fichiers système
 .DS_Store
+
+# artefacts de build générés par tsc
+client/vite.config.d.ts
+client/dist/
