@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Building2, MapPin, BedDouble, AlertCircle, Loader2, Check, ArrowLeft, X as XIcon, MessageCircle } from 'lucide-react';
+import { Building2, MapPin, BedDouble, AlertCircle, Loader2, Check, ArrowLeft, MessageCircle } from 'lucide-react';
 import API from '../../api/axios';
+import { Spinner, EmptyState, Modal, Button } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useContacter } from '../../hooks/useContacter';
 import type { Hotel, Chambre } from '../../types';
@@ -70,75 +71,99 @@ const HotelPublique = () => {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><Spinner size="lg" /></div>;
 
   if (erreur || !hotel) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
         <AlertCircle className="w-10 h-10 text-slate-300" />
         <p className="text-slate-500 font-medium">{erreur}</p>
-        <Link to="/hotels" className="text-sm font-semibold text-[#007AFF] hover:underline">Retour aux établissements</Link>
+        <Link to="/hotels" className="text-sm font-semibold text-primary hover:underline">Retour aux établissements</Link>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl mx-auto pb-24 animate-fade-in">
-      <Link to="/hotels" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#007AFF] mb-4 transition">
+      <Link to="/hotels" className="glass-pill inline-flex items-center gap-2 text-sm text-slate-600 hover:text-primary mb-4 no-underline transition-colors">
         <ArrowLeft className="w-4 h-4" /> Retour
       </Link>
 
-      <div className="rounded-2xl p-5 mb-5 text-white relative overflow-hidden" style={{ backgroundColor: hotel.couleurPrincipale || '#007AFF' }}>
-        {hotel.photos?.[0] && <img src={hotel.photos[0]} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
-        <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center overflow-hidden flex-shrink-0">
-            {hotel.logo ? <img src={hotel.logo} alt={hotel.nom} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6" />}
+      {/* ── Vitrine établissement : héro verre sur photo ── */}
+      <div className="glass-elevated relative rounded-[26px] p-5 sm:p-6 mb-5 overflow-hidden animate-slide-up">
+        {hotel.photos?.[0] && <img src={hotel.photos[0]} alt="" className="absolute inset-0 w-full h-full object-cover" aria-hidden="true" />}
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, ${(hotel.couleurPrincipale || '#A855F7')}E6 0%, ${(hotel.couleurPrincipale || '#A855F7')}99 100%)` }}
+          aria-hidden="true"
+        />
+        <div className="relative">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center overflow-hidden flex-shrink-0 border border-white/25">
+              {hotel.logo ? <img src={hotel.logo} alt={hotel.nom} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-white" strokeWidth={2.1} />}
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-bold text-lg text-white truncate tracking-tight">{hotel.nom}</h1>
+              {hotel.localisation?.ville && <p className="text-xs text-white/85 flex items-center gap-1"><MapPin className="w-3 h-3" /> {hotel.localisation.ville}</p>}
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="font-bold text-lg truncate">{hotel.nom}</h1>
-            {hotel.localisation?.ville && <p className="text-xs opacity-90 flex items-center gap-1"><MapPin className="w-3 h-3" /> {hotel.localisation.ville}</p>}
-          </div>
+          {hotel.description && <p className="text-sm text-white/90 mt-3 max-w-xl">{hotel.description}</p>}
+          {hotel.equipements?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {hotel.equipements.map((eq) => <span key={eq} className="text-[11px] font-medium bg-white/20 backdrop-blur border border-white/20 rounded-full px-2.5 py-1 text-white">{eq}</span>)}
+            </div>
+          )}
+          {typeof hotel.proprietaire === 'object' && (
+            <div className="flex items-center justify-between gap-3 mt-4">
+              <p className="text-xs text-white/75">Hôtelier : {hotel.proprietaire.prenom} {hotel.proprietaire.nom}</p>
+              {isConnected && (
+                <button
+                  onClick={() => contacter((hotel.proprietaire as { _id: string })._id, 'chambre', hotel._id, hotel.nom)}
+                  disabled={contactEnCours}
+                  className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 backdrop-blur px-3.5 py-2 rounded-full text-white hover:bg-white/30 transition disabled:opacity-60 active:scale-95"
+                >
+                  {contactEnCours ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} Contacter
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        {hotel.description && <p className="relative text-sm opacity-90 mt-3">{hotel.description}</p>}
-        {hotel.equipements?.length > 0 && (
-          <div className="relative flex flex-wrap gap-1.5 mt-3">
-            {hotel.equipements.map((eq) => <span key={eq} className="text-[11px] bg-white/20 backdrop-blur rounded-full px-2.5 py-1">{eq}</span>)}
-          </div>
-        )}
-        {typeof hotel.proprietaire === 'object' && (
-          <div className="relative flex items-center justify-between mt-3">
-            <p className="text-xs opacity-75">Hôtelier : {hotel.proprietaire.prenom} {hotel.proprietaire.nom}</p>
-            {isConnected && (
-              <button
-                onClick={() => contacter((hotel.proprietaire as { _id: string })._id, 'chambre', hotel._id, hotel.nom)}
-                disabled={contactEnCours}
-                className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 backdrop-blur px-3 py-1.5 rounded-full hover:bg-white/30 transition disabled:opacity-60"
-              >
-                {contactEnCours ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} Contacter
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {contactErreur && (
         <p className="text-xs text-red-500 mb-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{contactErreur}</p>
       )}
 
+      {/* ── Chambres : cartes détaillées type plateforme de réservation ── */}
+      <div className="flex items-center gap-2 mb-3">
+        <BedDouble className="w-4 h-4 text-violet-500" strokeWidth={2.2} />
+        <h2 className="text-sm font-bold text-slate-900">Chambres</h2>
+        <span className="text-[10px] font-semibold text-slate-400">{chambres.length} disponible{chambres.length > 1 ? 's' : ''}</span>
+      </div>
       {chambres.length === 0 ? (
-        <p className="text-center text-sm text-slate-400 py-16">Aucune chambre disponible pour le moment.</p>
+        <EmptyState icon={BedDouble} title="Aucune chambre disponible pour le moment." />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {chambres.map((c) => (
-            <div key={c._id} className="glass rounded-2xl overflow-hidden">
-              <div className="h-28 bg-slate-100 flex items-center justify-center overflow-hidden">
-                {c.photos?.[0] ? <img src={c.photos[0]} alt={c.type} className="w-full h-full object-cover" /> : <BedDouble className="w-6 h-6 text-slate-300" />}
+            <div key={c._id} className="glass group rounded-[20px] overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-[var(--ease-smooth)]">
+              <div className="relative h-32 bg-slate-100 dark:bg-white/5 flex items-center justify-center overflow-hidden">
+                {c.photos?.[0] ? (
+                  <img src={c.photos[0]} alt={c.type} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" loading="lazy" />
+                ) : (
+                  <BedDouble className="w-6 h-6 text-slate-300" />
+                )}
               </div>
-              <div className="p-3">
-                <p className="text-sm font-semibold text-slate-900">{c.type}</p>
+              <div className="p-3.5">
+                <p className="text-sm font-semibold text-slate-900 capitalize">{c.type}</p>
                 <p className="text-xs text-slate-400 mb-2">{c.capacite} personne{c.capacite > 1 ? 's' : ''}</p>
-                <p className="text-sm font-bold text-slate-900 mb-2">{c.prixParNuit.toLocaleString('fr-FR')} XOF / nuit</p>
-                <button onClick={() => ouvrirReservation(c)} className="w-full text-xs font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition rounded-lg py-1.5">Réserver</button>
+                <p className="text-base font-bold text-primary mb-2.5">{c.prixParNuit.toLocaleString('fr-FR')} <span className="text-xs font-medium text-slate-400">XOF / nuit</span></p>
+                <button
+                  onClick={() => ouvrirReservation(c)}
+                  className="w-full text-xs font-semibold text-white rounded-full py-2 active:scale-[0.98] transition-transform"
+                  style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' }}
+                >
+                  Réserver
+                </button>
               </div>
             </div>
           ))}
@@ -146,35 +171,34 @@ const HotelPublique = () => {
       )}
 
       {chambreChoisie && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => !envoi && setChambreChoisie(null)}>
-          <div className="w-full max-w-md glass rounded-3xl shadow-2xl p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+        <Modal
+          open
+          onClose={() => !envoi && setChambreChoisie(null)}
+          title={!reservationReussie ? `Réserver — ${chambreChoisie.type}` : undefined}
+          showCloseButton={!reservationReussie}
+        >
             {reservationReussie ? (
               <div className="text-center py-4 space-y-3">
                 <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center"><Check className="w-7 h-7 text-emerald-500" /></div>
                 <p className="font-semibold text-slate-900">Demande de réservation envoyée !</p>
                 <p className="text-sm text-slate-500">{hotel.nom} va confirmer votre réservation sous peu.</p>
-                <button onClick={() => setChambreChoisie(null)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition">Fermer</button>
+                <Button onClick={() => setChambreChoisie(null)} fullWidth className="!bg-slate-900 hover:!bg-slate-800">Fermer</Button>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-bold text-slate-900">Réserver — {chambreChoisie.type}</h2>
-                  <button onClick={() => setChambreChoisie(null)} className="p-1.5 rounded-full hover:bg-slate-100"><XIcon className="w-4 h-4 text-slate-500" /></button>
-                </div>
-
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Arrivée</label>
-                    <input type="date" value={dateArrivee} min={new Date().toISOString().split('T')[0]} onChange={(e) => setDateArrivee(e.target.value)} className="w-full px-3 py-2.5 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Arrivée</label>
+                    <input type="date" value={dateArrivee} min={new Date().toISOString().split('T')[0]} onChange={(e) => setDateArrivee(e.target.value)} className="w-full px-3 py-2.5 bg-slate-100/70 dark:bg-white/[0.06] rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 border border-transparent transition-all" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Départ</label>
-                    <input type="date" value={dateDepart} min={dateArrivee || new Date().toISOString().split('T')[0]} onChange={(e) => setDateDepart(e.target.value)} className="w-full px-3 py-2.5 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Départ</label>
+                    <input type="date" value={dateDepart} min={dateArrivee || new Date().toISOString().split('T')[0]} onChange={(e) => setDateDepart(e.target.value)} className="w-full px-3 py-2.5 bg-slate-100/70 dark:bg-white/[0.06] rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 border border-transparent transition-all" />
                   </div>
                 </div>
 
                 {nombreNuits > 0 && (
-                  <div className="flex items-center justify-between text-sm mb-4 bg-blue-50 rounded-xl px-3 py-2.5">
+                  <div className="flex items-center justify-between text-sm mb-4 bg-primary/10 rounded-xl px-3 py-2.5">
                     <span className="text-slate-600">{nombreNuits} nuit{nombreNuits > 1 ? 's' : ''}</span>
                     <span className="font-bold text-slate-900">{totalSejour.toLocaleString('fr-FR')} XOF</span>
                   </div>
@@ -189,13 +213,12 @@ const HotelPublique = () => {
 
                 {reservationErreur && <p className="text-xs text-red-500 flex items-center gap-1.5 mb-3"><AlertCircle className="w-3.5 h-3.5" />{reservationErreur}</p>}
 
-                <button onClick={handleReserver} disabled={!isConnected || envoi} className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                  {envoi && <Loader2 className="w-4 h-4 animate-spin" />} Demander la réservation
-                </button>
+                <Button onClick={handleReserver} disabled={!isConnected} loading={envoi} fullWidth size="lg">
+                  Demander la réservation
+                </Button>
               </>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

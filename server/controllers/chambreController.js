@@ -60,7 +60,8 @@ const updateChambre = async (req, res) => {
     await chambre.save();
     res.json(chambre);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -74,7 +75,8 @@ const deleteChambre = async (req, res) => {
     await chambre.deleteOne();
     res.json({ message: 'Chambre supprimée avec succès.' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -103,7 +105,8 @@ const getChambres = async (req, res) => {
 
     res.json({ chambres, page: pageNormalisee });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

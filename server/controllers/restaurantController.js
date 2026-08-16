@@ -31,7 +31,8 @@ const createRestaurant = async (req, res) => {
 
     res.status(201).json(restaurant);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -46,7 +47,8 @@ const getMonRestaurant = async (req, res) => {
     const plats = await Plat.find({ restaurant: restaurant._id }).sort({ categorie: 1, createdAt: -1 });
     res.json({ restaurant, plats });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -65,7 +67,8 @@ const getRestaurantPublic = async (req, res) => {
 
     res.json({ restaurant, plats });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -88,7 +91,8 @@ const getRestaurants = async (req, res) => {
 
     res.json({ restaurants, page: pageNormalisee, pages: Math.ceil(total / limiteNormalisee) });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -112,7 +116,8 @@ const updateRestaurant = async (req, res) => {
     await restaurant.save();
     res.json(restaurant);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

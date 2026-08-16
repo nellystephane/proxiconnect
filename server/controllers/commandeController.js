@@ -13,6 +13,29 @@ const createCommande = async (req, res) => {
       return res.status(400).json({ message: 'La commande doit contenir au moins un article.' });
     }
 
+    // ─── Localisation de livraison : la description du lieu ("comment
+    // trouver...") est obligatoire dès qu'une livraison est demandée ; les
+    // coordonnées GPS restent toujours facultatives (contexte ouest-africain :
+    // le repère humain prime sur le point GPS). Les commandes sans livraison
+    // ne sont pas concernées, et les anciennes commandes ne sont pas rejouées
+    // par cette validation. ───
+    let adresseLivraisonFinale = {};
+    if (livraisonDemandee) {
+      const description = (adresseLivraison?.details || '').trim();
+      if (!description) {
+        return res.status(400).json({ message: 'Merci de décrire comment trouver votre lieu de livraison.' });
+      }
+      adresseLivraisonFinale = {
+        ville: (adresseLivraison?.ville || '').trim(),
+        quartier: (adresseLivraison?.quartier || '').trim(),
+        details: description,
+        latitude: typeof adresseLivraison?.latitude === 'number' ? adresseLivraison.latitude : null,
+        longitude: typeof adresseLivraison?.longitude === 'number' ? adresseLivraison.longitude : null,
+        mapUrl: (adresseLivraison?.mapUrl || '').trim(),
+        formattedAddress: (adresseLivraison?.formattedAddress || '').trim()
+      };
+    }
+
     const boutique = await Boutique.findById(boutiqueId);
     if (!boutique) return res.status(404).json({ message: 'Boutique introuvable.' });
 
@@ -51,7 +74,7 @@ const createCommande = async (req, res) => {
       articles: articlesValides,
       montantTotal,
       livraisonDemandee: !!livraisonDemandee,
-      adresseLivraison: adresseLivraison || {},
+      adresseLivraison: adresseLivraisonFinale,
       note: note || ''
     });
 
@@ -71,7 +94,8 @@ const createCommande = async (req, res) => {
 
     res.status(201).json(commande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -84,7 +108,8 @@ const getMesAchats = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(commandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -97,7 +122,8 @@ const getCommandesRecues = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(commandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -138,7 +164,8 @@ const updateStatutCommande = async (req, res) => {
 
     res.json(commande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

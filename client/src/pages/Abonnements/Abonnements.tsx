@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Check, Crown, Video, Star, Zap, ArrowLeft, Smartphone,
-  AlertCircle, X as XIcon, Loader2, RotateCcw
+  AlertCircle, X as XIcon, RotateCcw
 } from 'lucide-react';
 import API from '../../api/axios';
+import { Spinner, Modal, Card, Button, Input } from '../../components/ui';
 import type { Offre, AbonnementStatut, Paiement } from '../../types';
 
 const OPERATEURS = [
@@ -149,7 +150,7 @@ const Abonnements = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -158,14 +159,17 @@ const Abonnements = () => {
     <div className="max-w-3xl mx-auto pb-24 animate-fade-in">
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#007AFF] mb-4 transition"
+        className="glass-pill inline-flex items-center gap-2 text-sm text-slate-600 hover:text-primary mb-4 no-underline transition-colors rounded-full px-3.5 py-2"
       >
         <ArrowLeft className="w-4 h-4" />
         Retour
       </button>
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Choisissez votre offre</h1>
+        <div className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #F97316 100%)', boxShadow: '0 10px 30px -8px rgba(245,158,11,0.4)' }}>
+          <Crown className="w-5 h-5 text-white" strokeWidth={2.2} />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Choisissez votre offre</h1>
         <p className="text-sm text-slate-500">Publiez plus d'annonces, ajoutez des vidéos et mettez-vous en avant.</p>
       </div>
 
@@ -177,26 +181,26 @@ const Abonnements = () => {
           const nombreIllimite = offre.avantages.nombreAnnonces >= 999999;
 
           return (
-            <div
+            <Card
               key={offre.type}
-              className={`relative p-5 rounded-2xl border transition-all ${
-                estAnnuel ? 'border-[#007AFF] bg-blue-50/40 shadow-lg shadow-blue-100' : 'border-slate-200 bg-white'
-              } ${estActive ? 'ring-2 ring-[#007AFF]' : ''}`}
+              variant={estAnnuel ? 'glass-solid' : 'glass'}
+              interactive
+              className={`relative !rounded-2xl p-5 ${estAnnuel ? 'shadow-lg' : ''} ${estActive ? 'ring-2 ring-primary' : ''}`}
             >
               {estAnnuel && (
-                <span className="absolute -top-3 left-5 text-[10px] font-bold uppercase tracking-wide bg-[#007AFF] text-white px-2.5 py-1 rounded-full">
+                <span className="absolute -top-3 left-5 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-full btn-liquid-primary">
                   Meilleure offre
                 </span>
               )}
               {estActive && (
-                <span className="absolute -top-3 right-5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white px-2.5 py-1 rounded-full">
+                <span className="absolute -top-3 right-5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-sm">
                   Offre actuelle
                 </span>
               )}
 
               <div className="flex items-center gap-2 mb-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${estAnnuel ? 'bg-[#007AFF] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  <Icone className="w-4 h-4" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${estAnnuel ? 'text-white' : 'glass-light text-slate-500'}`} style={estAnnuel ? { background: 'var(--gradient-primary)' } : undefined}>
+                  <Icone className="w-4 h-4" strokeWidth={2.2} />
                 </div>
                 <h3 className="font-bold text-slate-900">{offre.label}</h3>
               </div>
@@ -224,17 +228,16 @@ const Abonnements = () => {
               </ul>
 
               {offre.type !== 'gratuit' && (
-                <button
+                <Button
                   onClick={() => ouvrirPaiement(offre)}
                   disabled={estActive}
-                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                    estAnnuel ? 'bg-[#007AFF] text-white hover:bg-blue-600' : 'bg-slate-900 text-white hover:bg-slate-800'
-                  }`}
+                  variant={estAnnuel ? 'primary' : 'ghost'}
+                  fullWidth
                 >
                   {estActive ? 'Offre active' : "S'abonner"}
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -246,22 +249,11 @@ const Abonnements = () => {
 
       {/* Modale de paiement, centrée */}
       {offreChoisie && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
-          onClick={etape === 'attente' ? undefined : fermerModale}
+        <Modal
+          open
+          onClose={etape === 'attente' ? undefined : fermerModale}
+          title={`Abonnement ${offreChoisie.label}`}
         >
-          <div
-            className="w-full max-w-md glass rounded-3xl shadow-2xl p-6 animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-slate-900">Abonnement {offreChoisie.label}</h2>
-              {etape !== 'attente' && (
-                <button onClick={fermerModale} className="p-1.5 rounded-full hover:bg-slate-100">
-                  <XIcon className="w-4 h-4 text-slate-500" />
-                </button>
-              )}
-            </div>
 
             {etape === 'formulaire' && (
               <div className="space-y-4">
@@ -270,15 +262,18 @@ const Abonnements = () => {
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">Opérateur</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wider">Opérateur</label>
                   <div className="grid grid-cols-2 gap-2">
                     {OPERATEURS.map((op) => (
                       <button
                         key={op.id}
                         onClick={() => setOperateur(op.id)}
-                        className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition ${
-                          operateur === op.id ? 'border-[#007AFF] bg-blue-50 text-[#007AFF]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          operateur === op.id
+                            ? 'text-white shadow-md'
+                            : 'glass-light border-transparent text-slate-600 hover:bg-white/60'
                         }`}
+                        style={operateur === op.id ? { background: 'var(--gradient-primary)' } : undefined}
                       >
                         {op.label}
                       </button>
@@ -286,39 +281,34 @@ const Abonnements = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Numéro Mobile Money</label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      value={numero}
-                      onChange={(e) => setNumero(e.target.value)}
-                      placeholder="01 23 45 67 89"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="Numéro Mobile Money"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="01 23 45 67 89"
+                  icon={<Smartphone className="w-4 h-4" />}
+                />
 
                 {erreur && (
                   <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{erreur}</p>
                 )}
 
-                <button
+                <Button
                   onClick={handleInitierPaiement}
                   disabled={envoi}
-                  className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                  loading={envoi}
+                  fullWidth
                 >
-                  {envoi && <Loader2 className="w-4 h-4 animate-spin" />}
                   Payer {offreChoisie.prix.toLocaleString('fr-FR')} XOF
-                </button>
+                </Button>
               </div>
             )}
 
             {etape === 'attente' && (
               <div className="space-y-4 text-center">
-                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center relative">
-                  <Smartphone className="w-6 h-6 text-[#007AFF]" />
-                  <span className="absolute inset-0 rounded-full border-2 border-[#007AFF]/30 border-t-[#007AFF] animate-spin" />
+                <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center relative">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                  <span className="absolute inset-0 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed">
                   Une demande de paiement a été envoyée à votre numéro <span className="font-semibold">{numero}</span> via {OPERATEURS.find(o => o.id === operateur)?.label}.
@@ -337,12 +327,9 @@ const Abonnements = () => {
                 </div>
                 <p className="font-semibold text-slate-900">Paiement non confirmé</p>
                 <p className="text-sm text-slate-500">{erreur}</p>
-                <button
-                  onClick={handleReessayer}
-                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" /> Réessayer
-                </button>
+                <Button onClick={handleReessayer} fullWidth icon={<RotateCcw className="w-4 h-4" />}>
+                  Réessayer
+                </Button>
               </div>
             )}
 
@@ -353,16 +340,12 @@ const Abonnements = () => {
                 </div>
                 <p className="font-semibold text-slate-900">Abonnement activé avec succès !</p>
                 <p className="text-sm text-slate-500">Vos nouveaux avantages sont disponibles dès maintenant.</p>
-                <button
-                  onClick={() => { fermerModale(); navigate('/profil'); }}
-                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition"
-                >
+                <Button onClick={() => { fermerModale(); navigate('/profil'); }} fullWidth>
                   Retour au profil
-                </button>
+                </Button>
               </div>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

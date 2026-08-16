@@ -4,6 +4,9 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -14,6 +17,7 @@ const User = require('./models/User');
 const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 const { creerNotification } = require('./utils/notifier');
+const { marquerEnLigne, marquerHorsLigne, estEnLigne } = require('./utils/presence');
 
 
 // ─── Routes ───
@@ -32,6 +36,7 @@ const chambreRoutes = require('./routes/chambreRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const livreurRoutes = require('./routes/livreurRoutes');
 const demandeLivraisonRoutes = require('./routes/demandeLivraisonRoutes');
+const evaluationLivreurRoutes = require('./routes/evaluationLivreurRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
@@ -44,10 +49,48 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// ─── Origines autorisées (CORS) ───
+// Configurable via la variable d'environnement CORS_ORIGINS (liste séparée par
+// des virgules) pour ne pas avoir à modifier le code si le domaine change.
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'https://nellystephane.github.io,http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Autorise aussi les requêtes sans origine (apps mobiles, curl, health checks)
+    if (!origin || CORS_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origine non autorisée par CORS.'));
+    }
+  },
+  credentials: true
+};
+
+// ─── Limitation du débit sur les routes sensibles (anti brute-force) ───
+const limiteurAuth = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { message: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ─── Middleware ───
-app.use(cors());
+app.use(helmet({
+  // L'app sert des photos uploadées consommées cross-origin par le front GitHub Pages
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+app.use(cors(corsOptions));
 app.use(express.json());
+app.use(mongoSanitize()); // neutralise les opérateurs Mongo ($gt, $ne...) injectés dans le body/query
 app.use('/uploads', express.static(uploadsDir));
+
+app.use('/api/users/login', limiteurAuth);
+app.use('/api/users/register', limiteurAuth);
+app.use('/api/users/password', limiteurAuth);
 
 // ─── Routes ───
 app.use('/api/users', userRoutes);
@@ -66,6 +109,7 @@ app.use('/api/chambres', chambreRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/livreurs', livreurRoutes);
 app.use('/api/demandes-livraison', demandeLivraisonRoutes);
+app.use('/api/evaluations-livreur', evaluationLivreurRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/notifications', notificationRoutes);
 
@@ -74,10 +118,19 @@ app.get('/api', (req, res) => {
   res.json({ message: 'API ProxiConnect opérationnelle 🚀' });
 });
 
+// ─── Healthcheck : utile pour le monitoring (Render, uptime checks...) ───
+app.get('/api/health', (req, res) => {
+  const dbConnecte = mongoose.connection.readyState === 1;
+  res.status(dbConnecte ? 200 : 503).json({
+    statut: dbConnecte ? 'ok' : 'degrade',
+    base_de_donnees: dbConnecte ? 'connectee' : 'deconnectee'
+  });
+});
+
 // ─── Serveur HTTP + Socket.io (chat en temps réel) ───
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*' }
+  cors: corsOptions
 });
 app.set('io', io); // pour que les contrôleurs REST puissent aussi émettre (voir conversationController)
 
@@ -97,9 +150,42 @@ io.use(async (socket, next) => {
   }
 });
 
+// ─── Diffuse un changement de présence aux personnes qui partagent une
+// conversation avec cet utilisateur (pas de broadcast global : inutile et
+// plus coûteux que de cibler les seules personnes concernées). ───
+const diffuserPresence = async (userId, enLigneVal) => {
+  try {
+    const conversations = await Conversation.find({ participants: userId }).select('participants');
+    const autres = new Set();
+    conversations.forEach((c) => c.participants.forEach((p) => {
+      if (p.toString() !== userId) autres.add(p.toString());
+    }));
+    if (autres.size === 0) return;
+
+    let dernierActivite = null;
+    if (!enLigneVal) {
+      dernierActivite = new Date();
+      await User.findByIdAndUpdate(userId, { dernierActivite }).catch(() => {});
+    }
+
+    autres.forEach((id) => {
+      io.to(`user:${id}`).emit('presence:maj', { userId, enLigne: enLigneVal, dernierActivite });
+    });
+  } catch (error) {
+    console.error('Erreur diffusion présence :', error);
+  }
+};
+
 io.on('connection', (socket) => {
   // Salle personnelle : permet de notifier l'utilisateur même hors d'une conversation ouverte
   socket.join(`user:${socket.userId}`);
+
+  // ─── Présence : ce socket compte comme une connexion active pour cet
+  // utilisateur. S'il en avait déjà une autre ouverte (autre onglet,
+  // autre appareil), on ne redouble pas l'annonce "en ligne". ───
+  const etaitDejaEnLigne = estEnLigne(socket.userId);
+  marquerEnLigne(socket.userId, socket.id);
+  if (!etaitDejaEnLigne) diffuserPresence(socket.userId, true);
 
   socket.on('conversation:rejoindre', (conversationId) => {
     socket.join(`conversation:${conversationId}`);
@@ -109,9 +195,10 @@ io.on('connection', (socket) => {
     socket.leave(`conversation:${conversationId}`);
   });
 
-  socket.on('message:envoyer', async ({ conversationId, contenu }, callback) => {
+  socket.on('message:envoyer', async ({ conversationId, contenu, pieceJointe }, callback) => {
     try {
-      if (!contenu || !contenu.trim()) return;
+      const texte = (contenu || '').trim();
+      if (!texte && !pieceJointe?.url) return callback?.({ erreur: 'Message vide.' });
 
       const conversation = await Conversation.findById(conversationId);
       if (!conversation || !conversation.participants.some((p) => p.toString() === socket.userId)) {
@@ -121,10 +208,11 @@ io.on('connection', (socket) => {
       const message = await Message.create({
         conversation: conversationId,
         expediteur: socket.userId,
-        contenu: contenu.trim()
+        contenu: texte,
+        pieceJointe: pieceJointe?.url ? pieceJointe : undefined
       });
 
-      conversation.dernierMessage = contenu.trim().slice(0, 120);
+      conversation.dernierMessage = texte || (pieceJointe ? `📎 ${pieceJointe.nom || 'Pièce jointe'}` : '');
       conversation.derniereActivite = new Date();
       await conversation.save();
 
@@ -136,9 +224,9 @@ io.on('connection', (socket) => {
           await creerNotification(
             io,
             p,
-            'nouveau_message',
-            `Nouveau message de ${socket.userNomComplet}`,
-            contenu.trim().length > 100 ? `${contenu.trim().slice(0, 100)}…` : contenu.trim(),
+            pieceJointe?.url ? 'piece_jointe' : 'nouveau_message',
+            pieceJointe?.url ? `${socket.userNomComplet} vous a envoyé un fichier` : `Nouveau message de ${socket.userNomComplet}`,
+            texte.length > 100 ? `${texte.slice(0, 100)}…` : (texte || pieceJointe?.nom || ''),
             `/messages/${conversationId}`
           );
         }
@@ -148,6 +236,11 @@ io.on('connection', (socket) => {
     } catch (error) {
       callback?.({ erreur: 'Erreur serveur.' });
     }
+  });
+
+  socket.on('disconnect', () => {
+    const vientDePasserHorsLigne = marquerHorsLigne(socket.userId, socket.id);
+    if (vientDePasserHorsLigne) diffuserPresence(socket.userId, false);
   });
 });
 

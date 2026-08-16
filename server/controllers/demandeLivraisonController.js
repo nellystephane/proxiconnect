@@ -1,6 +1,8 @@
 const DemandeLivraison = require('../models/DemandeLivraison');
 const Commande = require('../models/Commande');
 const CommandeRestaurant = require('../models/CommandeRestaurant');
+const Livreur = require('../models/Livreur');
+const EvaluationLivreur = require('../models/EvaluationLivreur');
 const { creerNotification } = require('../utils/notifier');
 
 // ─── Créer une demande de livraison à partir d'une commande (vente ou restauration) ───
@@ -38,9 +40,40 @@ const createDemande = async (req, res) => {
       tarif: tarif || 0
     });
 
+    // ─── Prévient les livreurs déjà en ligne dont la zone couverte
+    // correspond à la ville de livraison — sans casser le fonctionnement
+    // existant (les livreurs continuent aussi de voir la demande en
+    // consultant l'onglet "Demandes" à tout moment). Best-effort : un souci
+    // de notification ne doit jamais faire échouer la création de la demande. ───
+    try {
+      const ville = demande.adresseLivraison?.ville;
+      if (ville) {
+        const livreursEnZone = await Livreur.find({
+          statut: 'active',
+          disponibilite: 'en_ligne',
+          zoneCouverture: new RegExp(ville, 'i')
+        }).select('utilisateur');
+
+        const io = req.app.get('io');
+        for (const l of livreursEnZone) {
+          await creerNotification(
+            io,
+            l.utilisateur,
+            'nouvelle_livraison',
+            'Nouvelle livraison disponible',
+            `Une livraison est disponible à ${ville}.`,
+            '/livraison'
+          );
+        }
+      }
+    } catch (notifError) {
+      console.error('Notification livreurs zone échouée :', notifError.message);
+    }
+
     res.status(201).json(demande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -58,7 +91,8 @@ const getDemandesDisponibles = async (req, res) => {
 
     res.json(demandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -87,7 +121,8 @@ const accepterDemande = async (req, res) => {
 
     res.json(demande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -96,7 +131,7 @@ const accepterDemande = async (req, res) => {
 const updateStatutDemande = async (req, res) => {
   try {
     const { statut } = req.body;
-    const statutsValides = ['en_cours', 'livrée', 'annulée'];
+    const statutsValides = ['en_cours', 'en_route', 'arrivée', 'livrée', 'annulée'];
     if (!statutsValides.includes(statut)) {
       return res.status(400).json({ message: 'Statut invalide.' });
     }
@@ -110,20 +145,38 @@ const updateStatutDemande = async (req, res) => {
     demande.statut = statut;
     await demande.save();
 
-    if (statut === 'en_cours' || statut === 'livrée') {
+    const MESSAGES_STATUT = {
+      en_cours: 'Votre livreur a démarré la course.',
+      en_route: 'Votre livreur est en route.',
+      arrivée: 'Votre livreur est arrivé.',
+      livrée: 'Votre commande a été livrée.'
+    };
+    if (MESSAGES_STATUT[statut]) {
       await creerNotification(
         req.app.get('io'),
         demande.client,
         'statut_livraison',
-        'Livraison en cours',
-        statut === 'en_cours' ? 'Votre livreur est en route.' : 'Votre commande a été livrée.',
+        statut === 'livrée' ? 'Livraison terminée' : 'Livraison en cours',
+        MESSAGES_STATUT[statut],
         '/profil'
+      );
+    }
+    // ─── Une fois livrée, on invite le client à évaluer le livreur ───
+    if (statut === 'livrée') {
+      await creerNotification(
+        req.app.get('io'),
+        demande.client,
+        'demande_evaluation',
+        'Comment s\'est passée votre livraison ?',
+        'Notez votre livreur en quelques secondes.',
+        `/livraison/${demande._id}/evaluer`
       );
     }
 
     res.json(demande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -134,9 +187,23 @@ const getMesLivraisons = async (req, res) => {
     const demandes = await DemandeLivraison.find({ livreur: req.user._id })
       .populate('vendeur', 'nom prenom telephone')
       .sort({ createdAt: -1 });
-    res.json(demandes);
+
+    // ─── Rattache l'évaluation du client à chaque livraison, quand elle
+    // existe déjà (visible directement dans l'historique du livreur, pas
+    // seulement agrégée dans sa note moyenne). ───
+    const evaluations = await EvaluationLivreur.find({ livraison: { $in: demandes.map((d) => d._id) } })
+      .select('livraison note commentaire createdAt');
+    const evaluationParLivraison = new Map(evaluations.map((e) => [e.livraison.toString(), e]));
+
+    const demandesAvecEvaluation = demandes.map((d) => ({
+      ...d.toObject(),
+      evaluation: evaluationParLivraison.get(d._id.toString()) || null
+    }));
+
+    res.json(demandesAvecEvaluation);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -149,7 +216,8 @@ const getMesDemandes = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(demandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

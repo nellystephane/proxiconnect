@@ -52,6 +52,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // ─── Présence : dernier instant où l'utilisateur a été vu actif (mis à
+  // jour à la déconnexion du dernier socket ouvert). Le statut "en ligne"
+  // lui-même n'est jamais persisté ici : il vit uniquement en mémoire côté
+  // serveur (voir utils/presence.js), ce qui évite qu'un crash serveur ou
+  // une fermeture d'application laisse un utilisateur "en ligne" indéfiniment. ───
+  dernierActivite: {
+    type: Date,
+    default: Date.now
+  },
   favoris: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Annonce'

@@ -26,7 +26,8 @@ const createHotel = async (req, res) => {
 
     res.status(201).json(hotel);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -37,7 +38,8 @@ const getMonHotel = async (req, res) => {
     const chambres = await Chambre.find({ hotel: hotel._id }).sort({ createdAt: -1 });
     res.json({ hotel, chambres });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -51,7 +53,8 @@ const getHotelPublic = async (req, res) => {
     const chambres = await Chambre.find({ hotel: hotel._id, disponible: true }).sort({ estMisEnAvant: -1, prixParNuit: 1 });
     res.json({ hotel, chambres });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -72,7 +75,8 @@ const getHotels = async (req, res) => {
 
     res.json({ hotels, page: pageNormalisee, pages: Math.ceil(total / limiteNormalisee) });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -89,7 +93,8 @@ const updateHotel = async (req, res) => {
     await hotel.save();
     res.json(hotel);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

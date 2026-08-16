@@ -62,7 +62,8 @@ const updatePlat = async (req, res) => {
     await plat.save();
     res.json(plat);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -78,7 +79,8 @@ const deletePlat = async (req, res) => {
     await plat.deleteOne();
     res.json({ message: 'Plat supprimé avec succès.' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -108,7 +110,8 @@ const getPlats = async (req, res) => {
 
     res.json({ plats, page: pageNormalisee });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

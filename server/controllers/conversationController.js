@@ -1,13 +1,22 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const { creerNotification } = require('../utils/notifier');
+const { estEnLigne } = require('../utils/presence');
+
+// ─── Annote un participant populé avec son statut de présence en direct
+// (calculé en mémoire, jamais persisté) — évite de dupliquer cette logique
+// dans chaque endpoint qui renvoie des participants. ───
+const avecPresence = (participant) => ({
+  ...participant.toObject(),
+  enLigne: estEnLigne(participant._id),
+});
 
 // ─── Mes conversations, triées par activité récente ───
 // GET /api/conversations
 const getConversations = async (req, res) => {
   try {
     const conversations = await Conversation.find({ participants: req.user._id })
-      .populate('participants', 'nom prenom photo')
+      .populate('participants', 'nom prenom photo dernierActivite')
       .sort({ derniereActivite: -1 });
 
     // Nombre de messages non lus par conversation (envoyés par l'autre personne)
@@ -18,13 +27,18 @@ const getConversations = async (req, res) => {
           expediteur: { $ne: req.user._id },
           lu: false
         });
-        return { ...conv.toObject(), nonLus };
+        return {
+          ...conv.toObject(),
+          participants: conv.participants.map(avecPresence),
+          nonLus,
+        };
       })
     );
 
     res.json(conversationsAvecCompteur);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -52,10 +66,15 @@ const createConversation = async (req, res) => {
       });
     }
 
-    conversation = await conversation.populate('participants', 'nom prenom photo');
-    res.status(201).json(conversation);
+    conversation = await conversation.populate('participants', 'nom prenom photo dernierActivite');
+    const conversationAvecPresence = {
+      ...conversation.toObject(),
+      participants: conversation.participants.map(avecPresence),
+    };
+    res.status(201).json(conversationAvecPresence);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -79,7 +98,8 @@ const getMessages = async (req, res) => {
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -87,8 +107,9 @@ const getMessages = async (req, res) => {
 // POST /api/conversations/:id/messages
 const envoyerMessage = async (req, res) => {
   try {
-    const { contenu } = req.body;
-    if (!contenu || !contenu.trim()) {
+    const { contenu, pieceJointe } = req.body;
+    const texte = (contenu || '').trim();
+    if (!texte && !pieceJointe?.url) {
       return res.status(400).json({ message: 'Le message ne peut pas être vide.' });
     }
 
@@ -101,10 +122,11 @@ const envoyerMessage = async (req, res) => {
     const message = await Message.create({
       conversation: conversation._id,
       expediteur: req.user._id,
-      contenu: contenu.trim()
+      contenu: texte,
+      pieceJointe: pieceJointe?.url ? pieceJointe : undefined
     });
 
-    conversation.dernierMessage = contenu.trim().slice(0, 120);
+    conversation.dernierMessage = texte || (pieceJointe ? `📎 ${pieceJointe.nom || 'Pièce jointe'}` : '');
     conversation.derniereActivite = new Date();
     await conversation.save();
 
@@ -117,16 +139,17 @@ const envoyerMessage = async (req, res) => {
       await creerNotification(
         io,
         destinataire,
-        'nouveau_message',
-        `Nouveau message de ${req.user.prenom} ${req.user.nom}`,
-        contenu.trim().length > 100 ? `${contenu.trim().slice(0, 100)}…` : contenu.trim(),
+        pieceJointe?.url ? 'piece_jointe' : 'nouveau_message',
+        pieceJointe?.url ? `${req.user.prenom} ${req.user.nom} vous a envoyé un fichier` : `Nouveau message de ${req.user.prenom} ${req.user.nom}`,
+        texte.length > 100 ? `${texte.slice(0, 100)}…` : (texte || pieceJointe?.nom || ''),
         `/messages/${conversation._id}`
       );
     }
 
     res.status(201).json(message);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -142,7 +165,8 @@ const getNombreNonLus = async (req, res) => {
     });
     res.json({ total });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

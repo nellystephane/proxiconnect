@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Search, MapPin, PackageSearch, Loader2 } from 'lucide-react';
+import { Store, Search, MapPin, PackageSearch } from 'lucide-react';
 import API from '../../api/axios';
+import { Skeleton, EmptyState, Button } from '../../components/ui';
 import type { Boutique } from '../../types';
 
 const Boutiques = () => {
@@ -33,41 +34,45 @@ const Boutiques = () => {
 
   return (
     <div className="max-w-3xl mx-auto pb-24 animate-fade-in">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-slate-900 mb-1">Boutiques près de chez vous</h1>
-        <p className="text-sm text-slate-500">Découvrez les vendeurs de la plateforme.</p>
+      {/* ── En-tête annuaire ── */}
+      <div className="flex items-center gap-3.5 mb-5 animate-slide-up">
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' }}>
+          <Store className="w-5 h-5 text-white" strokeWidth={2.2} />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Boutiques près de chez vous</h1>
+          <p className="text-sm text-slate-500">Découvrez les vendeurs de la plateforme.</p>
+        </div>
       </div>
 
-      <div className="flex gap-2 mb-5">
+      {/* ── Recherche en pilules verre ── */}
+      <div className="flex gap-2 mb-5 animate-slide-up" style={{ animationDelay: '60ms' }}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             placeholder="Rechercher une boutique"
-            className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            className="glass-pill w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-primary/25 transition-all"
           />
         </div>
         <div className="relative w-32">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={ville}
             onChange={(e) => setVille(e.target.value)}
             placeholder="Ville"
-            className="w-full pl-9 pr-2 py-2.5 bg-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            className="glass-pill w-full pl-9 pr-2 py-2.5 rounded-2xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-primary/25 transition-all"
           />
         </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-2xl bg-slate-100 animate-pulse" />)}
+          <Skeleton className="h-[104px] rounded-[22px]" count={4} />
         </div>
       ) : boutiques.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-          <PackageSearch className="w-10 h-10 text-slate-300" />
-          <p className="text-slate-500 font-medium">Aucune boutique trouvée.</p>
-        </div>
+        <EmptyState icon={PackageSearch} title="Aucune boutique trouvée." />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -75,31 +80,33 @@ const Boutiques = () => {
               <Link
                 key={b._id}
                 to={`/boutique/${b._id}`}
-                className="glass rounded-2xl p-4 flex items-center gap-3 no-underline hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                className="glass group relative rounded-[22px] p-4 flex items-center gap-3.5 no-underline overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-[var(--ease-smooth)] active:scale-[0.98]"
               >
-                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {b.logo ? <img src={b.logo} alt={b.nom} className="w-full h-full object-cover" /> : <Store className="w-5 h-5 text-slate-400" />}
+                <div className="absolute -top-10 -right-8 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(10,132,255,0.10), transparent 70%)' }} aria-hidden="true" />
+                <div
+                  className="relative w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, rgba(10,132,255,0.12), rgba(94,92,230,0.12))', boxShadow: 'var(--glass-specular)' }}
+                >
+                  {b.logo ? <img src={b.logo} alt={b.nom} className="w-full h-full object-cover" /> : <Store className="w-5 h-5 text-primary" strokeWidth={2.1} />}
                 </div>
-                <div className="min-w-0">
+                <div className="relative min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-900 truncate">{b.nom}</p>
                   {b.localisation?.ville && (
-                    <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> {b.localisation.ville}</p>
+                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {b.localisation.ville}</p>
                   )}
                 </div>
+                <span className="glass-pill relative rounded-full px-2.5 py-1.5 text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  Visiter →
+                </span>
               </Link>
             ))}
           </div>
 
           {page < pages && (
             <div className="flex justify-center mt-6">
-              <button
-                onClick={() => fetchBoutiques(page + 1, false)}
-                disabled={loadingPlus}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white shadow-sm text-sm font-semibold text-slate-600 hover:text-[#007AFF] transition"
-              >
-                {loadingPlus && <Loader2 className="w-4 h-4 animate-spin" />}
+              <Button variant="subtle" size="sm" onClick={() => fetchBoutiques(page + 1, false)} loading={loadingPlus}>
                 Voir plus
-              </button>
+              </Button>
             </div>
           )}
         </>

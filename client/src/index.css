@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Fait suivre au variant `dark:` de Tailwind notre attribut data-theme
+   (posé par le script anti-flash + ThemeContext) plutôt que la préférence
+   OS brute : indispensable pour que le choix explicite Light/Dark/System
+   de l'utilisateur soit respecté partout où `dark:` est utilisé. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /* ======================================================================
    PROXICONNECT — DESIGN SYSTEM "LIQUID GLASS"
    Inspiré des langages visuels iOS 26/27 (Liquid Glass) et HarmonyOS 7
@@ -14,8 +20,25 @@
   --color-primary: #007AFF;
   --color-primary-dark: #0056CC;
   --color-accent-2: #30D6C4;      /* teinte secondaire "HarmonyOS" — éco/local */
-  --color-ink: #1C1C1E;
+  --color-ink: var(--ink);
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+
+  /* Remappage sémantique de l'échelle slate : les centaines de
+     `text-slate-900`, `text-slate-600`, `border-slate-200`... déjà présentes
+     dans les pages deviennent AUTOMATIQUEMENT theme-aware (elles pointent vers
+     des variables qui basculent avec [data-theme=dark]) sans retoucher chaque
+     page. C'est ce qui permet un vrai Dark Mode lisible partout d'un coup. */
+  --color-slate-50: var(--surface-2);
+  --color-slate-100: var(--surface-2);
+  --color-slate-200: var(--hairline);
+  --color-slate-300: var(--hairline-strong);
+  --color-slate-400: var(--ink-3);
+  --color-slate-500: var(--ink-3);
+  --color-slate-600: var(--ink-2);
+  --color-slate-700: var(--ink-2);
+  --color-slate-800: var(--ink-1);
+  --color-slate-900: var(--ink);
+  --color-slate-950: var(--ink);
 }
 
 :root {
@@ -68,6 +91,25 @@
   --radius-lg: 20px;
   --radius-xl: 26px;
 
+  /* ─── Tokens sémantiques de texte / contraste ───
+     --ink : texte principal ; --ink-2 : texte secondaire ; --ink-3 : texte
+     tertiaire/placeholders. En dark, on ne "noircit" pas : on éclaircit avec
+     des blancs teintés et on garde des contrastes AA sur les surfaces verre. */
+  --ink: #1A1D24;
+  --ink-1: #2A2E37;
+  --ink-2: #4B5261;
+  --ink-3: #8A91A0;
+  --hairline: #E4E7EC;
+  --hairline-strong: #D3D8E0;
+  --surface-2: #F6F7FA;
+  --surface-hover: rgba(255, 255, 255, 0.6);
+
+  /* Couleurs sémantiques d'état */
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0A84FF;
+
   /* Ressort iOS/HarmonyOS : tout ce qui bouge (press, apparition, snap) passe
      par ces courbes plutôt que par des ease-in-out génériques. */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -82,43 +124,98 @@
 /* Fond "canvas" : dégradés radiaux très bas-contraste, fixes (non animés),
    pour un fond qui respire sans jamais distraire ni fatiguer l'œil — à
    l'opposé d'un gris plat #F2F2F7 ou d'un blanc pur qui renvoie la lumière. */
-@media (prefers-color-scheme: light), (prefers-color-scheme: no-preference) {
-  body {
-    background-color: #F2F3F7;
-    background-image:
-      radial-gradient(600px circle at 12% -5%, rgba(94, 92, 230, 0.07), transparent 60%),
-      radial-gradient(700px circle at 100% 10%, rgba(10, 132, 255, 0.08), transparent 55%),
-      radial-gradient(650px circle at 20% 100%, rgba(48, 214, 196, 0.06), transparent 55%);
-    background-attachment: fixed;
-  }
+/* Fond "canvas" : dégradés radiaux très bas-contraste, fixes (non animés),
+   pour un fond qui respire sans jamais distraire ni fatiguer l'œil — à
+   l'opposé d'un gris plat #F2F2F7 ou d'un blanc pur qui renvoie la lumière.
+   Le clair est l'état par défaut (aucun attribut requis) ; le sombre est
+   piloté explicitement via [data-theme="dark"] sur <html>, posé de façon
+   synchrone par le script anti-flash dans index.html puis tenu à jour par
+   ThemeContext (choix explicite Light/Dark/System + persistance). */
+body {
+  background-color: #F2F3F7;
+  background-image:
+    radial-gradient(600px circle at 12% -5%, rgba(94, 92, 230, 0.07), transparent 60%),
+    radial-gradient(700px circle at 100% 10%, rgba(10, 132, 255, 0.08), transparent 55%),
+    radial-gradient(650px circle at 20% 100%, rgba(48, 214, 196, 0.06), transparent 55%);
+  background-attachment: fixed;
+  transition: background-color var(--dur-slow) var(--ease-smooth);
 }
 
-/* Mode sombre système : confort nocturne façon iOS/HarmonyOS. Les surfaces
-   "verre" et la base de page s'adaptent ; le texte spécifique à chaque page
+/* Mode sombre : confort nocturne façon iOS/HarmonyOS. Les surfaces "verre"
+   et la base de page s'adaptent ; le texte spécifique à chaque page
    (slate-900 codé en dur) reste à migrer composant par composant, donc le
    mode sombre est pour l'instant limité aux surfaces globales (nav, cartes,
    fond) plutôt qu'activé partout d'un coup, pour ne jamais casser la lisibilité. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --glass-bg: rgba(30, 32, 38, 0.55);
-    --glass-bg-light: rgba(30, 32, 38, 0.38);
-    --glass-bg-dark: rgba(255, 255, 255, 0.06);
-    --glass-bg-strong: rgba(22, 24, 29, 0.72);
-    --glass-bg-solid: rgba(22, 24, 29, 0.92);
-    --glass-border: rgba(255, 255, 255, 0.10);
-    --glass-border-soft: rgba(255, 255, 255, 0.08);
-    --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-    color-scheme: dark;
-  }
-  body {
-    background-color: #0B0D12;
-    background-image:
-      radial-gradient(600px circle at 12% -5%, rgba(94, 92, 230, 0.16), transparent 60%),
-      radial-gradient(700px circle at 100% 10%, rgba(10, 132, 255, 0.14), transparent 55%),
-      radial-gradient(650px circle at 20% 100%, rgba(48, 214, 196, 0.10), transparent 55%);
-    background-attachment: fixed;
-  }
+:root[data-theme="dark"] {
+  --glass-bg: rgba(30, 32, 38, 0.55);
+  --glass-bg-light: rgba(30, 32, 38, 0.38);
+  --glass-bg-dark: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(22, 24, 29, 0.72);
+  --glass-bg-solid: rgba(22, 24, 29, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-soft: rgba(255, 255, 255, 0.08);
+  --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+
+  /* Texte : blancs teintés (pas de gris neutre froid), contrastes calibrés
+     pour les surfaces verre sombres (rgba(30,32,38,.55) à rgba(22,24,29,.92)). */
+  --ink: #F2F4F8;
+  --ink-1: #E2E6EE;
+  --ink-2: #AAB2C0;
+  --ink-3: #78818F;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.07);
+
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #64A8FF;
 }
+:root[data-theme="dark"] body {
+  background-color: #0B0D12;
+  background-image:
+    radial-gradient(600px circle at 12% -5%, rgba(94, 92, 230, 0.16), transparent 60%),
+    radial-gradient(700px circle at 100% 10%, rgba(10, 132, 255, 0.14), transparent 55%),
+    radial-gradient(650px circle at 20% 100%, rgba(48, 214, 196, 0.10), transparent 55%);
+}
+
+/* Surfaces "blanches" héritées de l'ancien design (bg-white/50, /60, /70...)
+   utilisées comme fonds de champs et états hover : en mode sombre elles
+   deviendraient des plaques blanches éblouissantes. On les convertit en
+   voiles clairs subtils cohérents avec le verre sombre. Les variantes
+   décoratives volontairement claires (halos, reflets sur images) ne sont
+   pas listées. */
+[data-theme="dark"] .bg-white\/40, [data-theme="dark"] .bg-white\/50,
+[data-theme="dark"] .bg-white\/60, [data-theme="dark"] .bg-white\/70,
+[data-theme="dark"] .bg-white\/75, [data-theme="dark"] .bg-white\/80,
+[data-theme="dark"] .bg-white\/90, [data-theme="dark"] .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+[data-theme="dark"] .hover\:bg-white\/60:hover, [data-theme="dark"] .hover\:bg-white\/70:hover,
+[data-theme="dark"] .hover\:bg-white\/80:hover {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+[data-theme="dark"] .bg-slate-50 { background-color: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .hover\:bg-slate-50:hover, [data-theme="dark"] .hover\:bg-slate-100:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+[data-theme="dark"] .hover\:bg-black\/\[0\.04\]:hover, [data-theme="dark"] .hover\:bg-black\/5:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Fond teintés -50/-100 (blue-50, red-50, emerald-50...) hérités : en mode
+   sombre, un fond pastel clair sur texte sombre devient illisible. On les
+   convertit en voiles translucides de la même teinte, adaptés au verre sombre. */
+[data-theme="dark"] .bg-red-50, [data-theme="dark"] .hover\:bg-red-50:hover { background-color: rgba(248, 113, 113, 0.12); }
+[data-theme="dark"] .bg-blue-50, [data-theme="dark"] .hover\:bg-blue-50:hover { background-color: rgba(100, 168, 255, 0.12); }
+[data-theme="dark"] .bg-blue-100 { background-color: rgba(100, 168, 255, 0.16); }
+[data-theme="dark"] .bg-emerald-50, [data-theme="dark"] .hover\:bg-emerald-50:hover { background-color: rgba(52, 211, 153, 0.12); }
+[data-theme="dark"] .bg-amber-50, [data-theme="dark"] .hover\:bg-amber-50:hover { background-color: rgba(251, 191, 36, 0.12); }
+[data-theme="dark"] .bg-amber-100 { background-color: rgba(251, 191, 36, 0.16); }
+[data-theme="dark"] .bg-purple-50 { background-color: rgba(192, 132, 252, 0.12); }
+[data-theme="dark"] .bg-orange-50 { background-color: rgba(251, 146, 60, 0.12); }
 
 /* Reset */
 * {
@@ -193,6 +290,73 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .animate-slide-up { animation: slideUp 0.4s var(--ease-spring); }
 .animate-scale-in { animation: scaleIn 0.25s var(--ease-spring); }
 
+/* Utilitaires sémantiques pour le nouveau code : à privilégier plutôt que
+   d'écrire des couleurs en dur — ils basculent automatiquement en Dark. */
+.text-ink { color: var(--ink); }
+.text-ink-2 { color: var(--ink-2); }
+.text-ink-3 { color: var(--ink-3); }
+.hairline { border-color: var(--hairline); }
+.bg-surface-2 { background-color: var(--surface-2); }
+
+/* Navigation mobile basse (bottom bar) : pilule de verre flottante façon
+   iOS 26, ancrée au-dessus du contenu, uniquement sur petits écrans. */
+.bottom-nav {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 26px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-lg)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(1.5);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--shadow-lg);
+}
+.bottom-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 6px 8px;
+  border-radius: 18px;
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-smooth), background var(--dur-fast) var(--ease-smooth), transform var(--dur-fast) var(--ease-spring);
+}
+.bottom-nav-item.active {
+  color: #fff;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow-primary);
+}
+.bottom-nav-item:active { transform: scale(0.92); }
+.bottom-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #EF4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border: 1.5px solid var(--glass-bg-solid);
+}
+
 /* ======================================================================
    SURFACES DE VERRE
    Chaque variante ajoute désormais le reflet spéculaire (--glass-specular)
@@ -218,6 +382,17 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   box-shadow: var(--glass-specular);
+}
+
+/* Niveau 3 — Glass Elevated : surfaces qui doivent se détacher du reste de
+   la page (zones héro, panneaux mis en avant) sans être une modale.
+   Plus de présence que .glass (Niveau 2), moins qu'une boîte de dialogue. */
+.glass-elevated {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-lg)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(1.35);
+  border: 1px solid var(--glass-border-soft);
+  box-shadow: var(--glass-specular), var(--shadow-md);
 }
 
 /* Barre de nav / header collant au scroll : besoin d'une lisibilité plus

@@ -31,7 +31,11 @@ const commandeRestaurantSchema = new mongoose.Schema({
   adresseLivraison: {
     ville: { type: String, trim: true },
     quartier: { type: String, trim: true },
-    details: { type: String, trim: true }
+    details: { type: String, trim: true },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    mapUrl: { type: String, trim: true, default: '' },
+    formattedAddress: { type: String, trim: true, default: '' }
   },
 
   note: { type: String, trim: true, maxlength: 300, default: '' }

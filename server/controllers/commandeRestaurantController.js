@@ -13,6 +13,23 @@ const createCommande = async (req, res) => {
       return res.status(400).json({ message: 'La commande doit contenir au moins un plat.' });
     }
 
+    let adresseLivraisonFinale = {};
+    if (modeService === 'livraison') {
+      const description = (adresseLivraison?.details || '').trim();
+      if (!description) {
+        return res.status(400).json({ message: 'Merci de décrire comment trouver votre lieu de livraison.' });
+      }
+      adresseLivraisonFinale = {
+        ville: (adresseLivraison?.ville || '').trim(),
+        quartier: (adresseLivraison?.quartier || '').trim(),
+        details: description,
+        latitude: typeof adresseLivraison?.latitude === 'number' ? adresseLivraison.latitude : null,
+        longitude: typeof adresseLivraison?.longitude === 'number' ? adresseLivraison.longitude : null,
+        mapUrl: (adresseLivraison?.mapUrl || '').trim(),
+        formattedAddress: (adresseLivraison?.formattedAddress || '').trim()
+      };
+    }
+
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) return res.status(404).json({ message: 'Restaurant introuvable.' });
 
@@ -40,7 +57,7 @@ const createCommande = async (req, res) => {
       articles: articlesValides,
       montantTotal,
       modeService: modeService || 'a_emporter',
-      adresseLivraison: adresseLivraison || {},
+      adresseLivraison: adresseLivraisonFinale,
       note: note || ''
     });
 
@@ -55,7 +72,8 @@ const createCommande = async (req, res) => {
 
     res.status(201).json(commande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -68,7 +86,8 @@ const getMesAchats = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(commandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -81,7 +100,8 @@ const getCommandesRecues = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(commandes);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -115,7 +135,8 @@ const updateStatutCommande = async (req, res) => {
 
     res.json(commande);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

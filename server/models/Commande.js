@@ -46,7 +46,18 @@ const commandeSchema = new mongoose.Schema({
   adresseLivraison: {
     ville: { type: String, trim: true },
     quartier: { type: String, trim: true },
-    details: { type: String, trim: true }
+    // "details" sert de description humaine du lieu ("dernière maison à
+    // gauche dans la von de l'école...") — champ déjà existant, désormais
+    // rendu obligatoire côté contrôleur pour toute NOUVELLE commande avec
+    // livraison, sans jamais invalider les anciennes commandes qui ne
+    // l'avaient pas renseigné.
+    details: { type: String, trim: true },
+    // ─── Localisation GPS : toujours optionnelle (priorité au contexte
+    // ouest-africain, où la description du lieu prime sur les coordonnées). ───
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    mapUrl: { type: String, trim: true, default: '' },
+    formattedAddress: { type: String, trim: true, default: '' }
   },
 
   note: {

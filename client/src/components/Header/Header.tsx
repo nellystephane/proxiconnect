@@ -4,6 +4,7 @@ import { MapPin, Search, Heart, User, LogOut, PlusCircle, LayoutGrid, Crown, Sto
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useNotifications } from '../../context/NotificationContext';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 const Header = () => {
   const { user, isConnected, logout } = useAuth();
@@ -54,11 +55,13 @@ const Header = () => {
           {/* Bouton recherche */}
           <button
             onClick={() => setShowSearch(!showSearch)}
-            className={`${iconBtn} ${showSearch ? 'text-[#007AFF] bg-[#007AFF]/10' : ''}`}
+            className={`${iconBtn} ${showSearch ? 'text-primary bg-primary/10' : ''}`}
             aria-label="Rechercher"
           >
             <Search className="w-[18px] h-[18px]" strokeWidth={2.2} />
           </button>
+
+          <ThemeToggle compact />
 
           {isConnected ? (
             <>
@@ -74,7 +77,7 @@ const Header = () => {
               <Link to="/messages" className={iconBtn} aria-label="Mes messages">
                 <MessageCircle className="w-[18px] h-[18px]" strokeWidth={2.2} />
                 {nonLus > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#007AFF] ring-2 ring-white/70" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-white/70" />
                 )}
               </Link>
 
@@ -87,7 +90,7 @@ const Header = () => {
               <div className="relative ml-1">
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-[#007AFF] font-bold text-sm overflow-hidden transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-primary font-bold text-sm overflow-hidden transition-all duration-200 hover:scale-105 active:scale-95"
                   style={{ background: 'linear-gradient(135deg, rgba(10,132,255,0.15), rgba(94,92,230,0.15))', boxShadow: 'var(--glass-specular), var(--shadow-sm)' }}
                 >
                   {user?.photo ? <img src={user.photo} alt={user.prenom} className="w-full h-full object-cover" /> : (user?.prenom?.charAt(0) || 'U')}
@@ -99,7 +102,7 @@ const Header = () => {
                     <div className="absolute right-0 top-12 z-20 w-56 glass-solid rounded-2xl p-2 animate-scale-in origin-top-right">
                       <Link
                         to="/profil"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-[#007AFF]/8 no-underline transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-primary/10 no-underline transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <User className="w-4 h-4 text-slate-400" />
@@ -107,7 +110,7 @@ const Header = () => {
                       </Link>
                       <Link
                         to="/profil?onglet=annonces"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-[#007AFF]/8 no-underline transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-primary/10 no-underline transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <LayoutGrid className="w-4 h-4 text-slate-400" />
@@ -115,7 +118,7 @@ const Header = () => {
                       </Link>
                       <Link
                         to="/deposer"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-[#007AFF]/8 no-underline transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-primary/10 no-underline transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <PlusCircle className="w-4 h-4 text-slate-400" />
@@ -123,7 +126,7 @@ const Header = () => {
                       </Link>
                       <Link
                         to="/mon-espace"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-[#007AFF]/8 no-underline transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-primary/10 no-underline transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <Store className="w-4 h-4 text-slate-400" />
@@ -131,7 +134,7 @@ const Header = () => {
                       </Link>
                       <Link
                         to="/abonnements"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-[#007AFF]/8 no-underline transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-primary/10 no-underline transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <Crown className="w-4 h-4 text-amber-400" />

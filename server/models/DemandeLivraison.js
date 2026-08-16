@@ -20,14 +20,23 @@ const demandeLivraisonSchema = new mongoose.Schema({
   adresseLivraison: {
     ville: { type: String, trim: true },
     quartier: { type: String, trim: true },
-    details: { type: String, trim: true }
+    details: { type: String, trim: true },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    mapUrl: { type: String, trim: true, default: '' },
+    formattedAddress: { type: String, trim: true, default: '' }
   },
 
   tarif: { type: Number, default: 0, min: 0 },
 
+  // ─── Statuts enrichis : les anciennes valeurs ('en_attente', 'assignée',
+  // 'en_cours', 'livrée', 'annulée') restent toutes valides et inchangées
+  // dans leur sens — on ajoute seulement 'en_route' et 'arrivée' entre
+  // 'assignée' et 'livrée' pour un suivi plus fin, sans renommer ni
+  // supprimer aucun statut existant (aucune donnée en base à migrer).
   statut: {
     type: String,
-    enum: ['en_attente', 'assignée', 'en_cours', 'livrée', 'annulée'],
+    enum: ['en_attente', 'assignée', 'en_cours', 'en_route', 'arrivée', 'livrée', 'annulée'],
     default: 'en_attente'
   }
 

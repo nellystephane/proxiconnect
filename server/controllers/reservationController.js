@@ -75,7 +75,8 @@ const createReservation = async (req, res) => {
 
     res.status(201).json(reservation);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -89,7 +90,8 @@ const getMesReservations = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(reservations);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -103,7 +105,8 @@ const getReservationsRecues = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(reservations);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -137,7 +140,8 @@ const updateStatutReservation = async (req, res) => {
 
     res.json(reservation);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -151,7 +155,8 @@ const getReservationsChambre = async (req, res) => {
     }).select('dateArrivee dateDepart');
     res.json(reservations);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

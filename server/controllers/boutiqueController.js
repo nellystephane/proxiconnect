@@ -28,7 +28,8 @@ const createBoutique = async (req, res) => {
 
     res.status(201).json(boutique);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -43,7 +44,8 @@ const getMaBoutique = async (req, res) => {
     const produits = await Produit.find({ boutique: boutique._id }).sort({ createdAt: -1 });
     res.json({ boutique, produits });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -63,7 +65,8 @@ const getBoutiquePublique = async (req, res) => {
 
     res.json({ boutique, produits });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -84,7 +87,8 @@ const updateBoutique = async (req, res) => {
     await boutique.save();
     res.json(boutique);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -110,7 +114,8 @@ const getBoutiques = async (req, res) => {
 
     res.json({ boutiques, page: pageNormalisee, pages: Math.ceil(total / limiteNormalisee) });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

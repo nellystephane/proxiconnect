@@ -28,11 +28,11 @@ const Footer = () => {
       <Link
         to={to}
         className={`relative flex flex-col items-center gap-0.5 py-2 px-4 rounded-xl no-underline transition-all duration-200 active:scale-90 ${
-          active ? 'text-[#007AFF]' : 'text-slate-400 hover:text-slate-600'
+          active ? 'text-primary' : 'text-slate-400 hover:text-slate-600'
         }`}
       >
         {active && (
-          <span className="absolute inset-0 rounded-xl bg-[#007AFF]/10 animate-scale-in" />
+          <span className="absolute inset-0 rounded-xl bg-primary/10 animate-scale-in" />
         )}
         <Icon className="relative w-5 h-5" strokeWidth={active ? 2.4 : 2} />
         <span className="relative text-[10px] font-medium">{label}</span>

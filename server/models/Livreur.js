@@ -15,6 +15,13 @@ const livreurSchema = new mongoose.Schema({
 
   statut: { type: String, enum: ['active', 'suspendu'], default: 'active' },
 
+  // ─── Notation spécifique au livreur (jamais mélangée avec les avis
+  // généraux sur annonces) — dénormalisée ici pour un affichage instantané
+  // sur le profil ; recalculée à chaque nouvelle évaluation par
+  // evaluationLivreurController.js, jamais modifiée manuellement ailleurs. ───
+  noteMoyenne: { type: Number, default: 0, min: 0, max: 5 },
+  nombreEvaluations: { type: Number, default: 0, min: 0 },
+
   abonnementPro: {
     actif: { type: Boolean, default: false },
     plan: { type: String, enum: ['pro_mensuel', 'pro_annuel', null], default: null },

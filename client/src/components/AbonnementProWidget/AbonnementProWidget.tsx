@@ -131,11 +131,12 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
 
   return (
     <>
-      <div className={`glass rounded-2xl p-4 flex items-center gap-4 ${estActif ? 'ring-2 ring-amber-300' : ''}`}>
-        <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${estActif ? 'bg-amber-50' : 'bg-slate-100'}`}>
-          <Crown className={`w-5 h-5 ${estActif ? 'text-amber-500' : 'text-slate-400'}`} />
+      <div className={`glass relative rounded-[22px] p-4 flex items-center gap-4 overflow-hidden ${estActif ? 'ring-2 ring-amber-300/70' : ''}`}>
+        <div className="absolute -top-10 -right-8 w-36 h-36 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.16), transparent 70%)' }} aria-hidden="true" />
+        <div className={`relative w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${estActif ? 'bg-amber-400/15' : 'bg-slate-100 dark:bg-white/10'}`}>
+          <Crown className={`w-5 h-5 ${estActif ? 'text-amber-500' : 'text-slate-400'}`} strokeWidth={2.1} />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="relative flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900">Abonnement Pro</p>
           <p className="text-xs text-slate-500">
             {estActif
@@ -145,7 +146,7 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
         </div>
         <button
           onClick={ouvrirModale}
-          className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition flex-shrink-0 ${estActif ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-[#007AFF] text-white hover:bg-blue-600'}`}
+          className={`relative text-xs font-semibold px-3.5 py-2 rounded-full transition flex-shrink-0 active:scale-95 ${estActif ? 'bg-amber-400/15 text-amber-600 hover:bg-amber-400/25' : 'btn-liquid-primary'}`}
         >
           {estActif ? 'Renouveler' : 'Devenir Pro'}
         </button>
@@ -153,14 +154,14 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
 
       {modalOuverte && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+          className="glass-overlay fixed inset-0 z-[70] flex items-center justify-center p-4"
           onClick={etape === 'attente' ? undefined : fermerModale}
         >
-          <div className="w-full max-w-md glass rounded-3xl shadow-2xl p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-modal w-full max-w-md rounded-3xl p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-slate-900 flex items-center gap-2"><Crown className="w-4 h-4 text-amber-500" /> Abonnement Pro</h2>
               {etape !== 'attente' && (
-                <button onClick={fermerModale} className="p-1.5 rounded-full hover:bg-slate-100"><XIcon className="w-4 h-4 text-slate-500" /></button>
+                <button onClick={fermerModale} className="glass-control p-1.5 rounded-full" aria-label="Fermer"><XIcon className="w-4 h-4 text-slate-500" /></button>
               )}
             </div>
 
@@ -180,13 +181,13 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
                     <button
                       key={o.type}
                       onClick={() => handleChoisirOffre(o)}
-                      className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-[#007AFF] hover:bg-blue-50 transition text-left"
+                      className="glass-light w-full flex items-center justify-between p-3.5 rounded-2xl hover:border-primary hover:bg-primary/10 transition text-left"
                     >
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{o.label}</p>
                         <p className="text-xs text-slate-400">{o.duree}</p>
                       </div>
-                      <p className="font-bold text-slate-900">{o.prix.toLocaleString('fr-FR')} XOF</p>
+                      <p className="font-bold text-primary">{o.prix.toLocaleString('fr-FR')} XOF</p>
                     </button>
                   ))
                 )}
@@ -203,26 +204,27 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
                     <button
                       key={op.id}
                       onClick={() => setOperateur(op.id)}
-                      className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition ${operateur === op.id ? 'border-[#007AFF] bg-blue-50 text-[#007AFF]' : 'border-slate-200 text-slate-600'}`}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium transition ${operateur === op.id ? 'text-white shadow-md' : 'glass-light text-slate-600'}`}
+                      style={operateur === op.id ? { background: 'var(--gradient-primary)' } : undefined}
                     >
                       {op.label}
                     </button>
                   ))}
                 </div>
                 <div className="relative">
-                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     value={numero}
                     onChange={(e) => setNumero(e.target.value)}
                     placeholder="01 23 45 67 89"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                    className="glass-pill w-full pl-10 pr-4 py-3 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-primary/20 transition"
                   />
                 </div>
                 {erreur && <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{erreur}</p>}
                 <button
                   onClick={handlePayer}
                   disabled={envoi}
-                  className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="btn-liquid-primary w-full py-3.5 rounded-xl font-semibold disabled:opacity-60"
                 >
                   {envoi && <Loader2 className="w-4 h-4 animate-spin" />} Payer {offreChoisie.prix.toLocaleString('fr-FR')} XOF
                 </button>
@@ -231,9 +233,9 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
 
             {etape === 'attente' && (
               <div className="space-y-4 text-center">
-                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center relative">
-                  <Smartphone className="w-6 h-6 text-[#007AFF]" />
-                  <span className="absolute inset-0 rounded-full border-2 border-[#007AFF]/30 border-t-[#007AFF] animate-spin" />
+                <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center relative">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                  <span className="absolute inset-0 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                 </div>
                 <p className="text-sm text-slate-600">Validez la transaction directement sur votre téléphone.</p>
                 <p className="text-xs text-slate-400">En attente de confirmation… {secondesEcoulees}s</p>
@@ -242,10 +244,10 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
 
             {etape === 'echec' && (
               <div className="space-y-4 text-center py-2">
-                <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center"><AlertCircle className="w-7 h-7 text-red-500" /></div>
+                <div className="w-14 h-14 mx-auto rounded-full bg-red-500/10 flex items-center justify-center"><AlertCircle className="w-7 h-7 text-red-500" /></div>
                 <p className="font-semibold text-slate-900">Paiement non confirmé</p>
                 <p className="text-sm text-slate-500">{erreur}</p>
-                <button onClick={() => setEtape('offres')} className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                <button onClick={() => setEtape('offres')} className="btn-liquid-ghost w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
                   <RotateCcw className="w-4 h-4" /> Réessayer
                 </button>
               </div>
@@ -253,9 +255,9 @@ const AbonnementProWidget = ({ espaceType, espaceId, abonnementPro, onUpdated }:
 
             {etape === 'succes' && (
               <div className="space-y-4 text-center py-2">
-                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center"><Check className="w-7 h-7 text-emerald-500" /></div>
+                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center"><Check className="w-7 h-7 text-emerald-500" /></div>
                 <p className="font-semibold text-slate-900">Abonnement Pro activé !</p>
-                <button onClick={fermerModale} className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition">Fermer</button>
+                <button onClick={fermerModale} className="btn-liquid-ghost w-full py-3 rounded-xl font-semibold">Fermer</button>
               </div>
             )}
           </div>

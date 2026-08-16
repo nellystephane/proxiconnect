@@ -5,6 +5,16 @@ export interface Localisation {
   details?: string;
 }
 
+// ─── Destination d'une livraison : la description ("details" hérité de
+// Localisation) reste le repère principal — les coordonnées GPS ne sont
+// qu'un complément optionnel, jamais une contrainte. ───
+export interface DestinationLivraison extends Localisation {
+  latitude?: number | null;
+  longitude?: number | null;
+  mapUrl?: string;
+  formattedAddress?: string;
+}
+
 export interface CreateurResume {
   _id: string;
   nom: string;
@@ -136,7 +146,7 @@ export interface CommandeRestaurant {
   montantTotal: number;
   modeService: 'sur_place' | 'a_emporter' | 'livraison';
   statut: 'en_attente' | 'en_préparation' | 'prête' | 'livrée' | 'annulée';
-  adresseLivraison?: Localisation;
+  adresseLivraison?: DestinationLivraison;
   note?: string;
   createdAt: string;
 }
@@ -193,6 +203,8 @@ export interface Livreur {
   tarifBase: number;
   disponibilite: 'en_ligne' | 'hors_ligne';
   statut: 'active' | 'suspendu';
+  noteMoyenne?: number;
+  nombreEvaluations?: number;
   abonnementPro: AbonnementPro;
   createdAt: string;
 }
@@ -205,9 +217,10 @@ export interface DemandeLivraison {
   client: string | CreateurResume;
   livreur?: string | CreateurResume | null;
   adresseRecuperation?: Localisation;
-  adresseLivraison?: Localisation;
+  adresseLivraison?: DestinationLivraison;
   tarif: number;
-  statut: 'en_attente' | 'assignée' | 'en_cours' | 'livrée' | 'annulée';
+  statut: 'en_attente' | 'assignée' | 'en_cours' | 'en_route' | 'arrivée' | 'livrée' | 'annulée';
+  evaluation?: { note: number; commentaire?: string; createdAt: string } | null;
   createdAt: string;
 }
 export interface Boutique {
@@ -262,7 +275,7 @@ export interface Commande {
   montantTotal: number;
   livraisonDemandee: boolean;
   statut: 'en_attente' | 'confirmée' | 'expédiée' | 'livrée' | 'annulée';
-  adresseLivraison?: Localisation;
+  adresseLivraison?: DestinationLivraison;
   note?: string;
   createdAt: string;
 }

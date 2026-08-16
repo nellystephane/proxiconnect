@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { Input, Button } from '../../components/ui';
 
 interface FormErrors {
   email?: string;
@@ -58,90 +59,73 @@ const Connexion = () => {
     }
   };
 
-  const inputClass = (field: keyof FormErrors) =>
-    `w-full pl-10 pr-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2 focus:bg-white ${
-      errors[field] ? 'border border-red-400 focus:ring-red-300' : 'border border-transparent focus:ring-blue-400'
-    }`;
-
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative isolate">
+      {/* Fond vivant : halos bleu/indigo/menthe — identité ProxiConnect */}
+      <div className="liquid-aurora fixed inset-0 -z-10" aria-hidden="true">
+        <span style={{ width: 420, height: 420, top: '-8%', left: '4%', background: 'radial-gradient(circle, rgba(94,92,230,0.16), transparent 70%)' }} />
+        <span style={{ width: 480, height: 480, top: '20%', right: '-8%', background: 'radial-gradient(circle, rgba(10,132,255,0.14), transparent 70%)' }} />
+        <span style={{ width: 380, height: 380, bottom: '-10%', left: '30%', background: 'radial-gradient(circle, rgba(48,214,196,0.12), transparent 70%)' }} />
+      </div>
+
       <div className="w-full max-w-md">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 mb-8 transition"
+          className="glass-pill inline-flex items-center gap-2 text-sm text-slate-600 hover:text-primary mb-8 no-underline transition-colors rounded-full px-3.5 py-2"
         >
           <ArrowLeft className="w-4 h-4" />
           Retour à l'accueil
         </Link>
 
-        <div className="glass-solid rounded-3xl p-8 shadow-xl">
+        <div className="glass-solid rounded-3xl p-8 shadow-xl animate-slide-up">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 rounded-full px-4 py-1 text-xs font-medium mb-4">
+            <div className="glass-pill inline-flex items-center gap-2 text-primary rounded-full px-4 py-1.5 text-xs font-semibold mb-4">
               <LogIn className="w-3.5 h-3.5" />
               Content de vous revoir
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Connexion</h1>
-            <p className="text-sm text-gray-500 mt-1">Accédez à votre espace</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Connexion</h1>
+            <p className="text-sm text-slate-500 mt-1">Accédez à votre espace</p>
           </div>
 
           {serverError && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-xl mb-6">
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl mb-6">
               {serverError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  className={inputClass('email')}
-                  placeholder="amina@exemple.com"
-                />
-              </div>
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <Input
+              type="email"
+              name="email"
+              label="Email"
+              value={form.email}
+              onChange={handleChange}
+              error={errors.email}
+              icon={<Mail className="w-4 h-4" />}
+              placeholder="amina@exemple.com"
+              autoComplete="email"
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">Mot de passe</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  name="motDePasse"
-                  value={form.motDePasse}
-                  onChange={handleChange}
-                  className={inputClass('motDePasse')}
-                  placeholder="••••••••"
-                />
-              </div>
-              {errors.motDePasse && <p className="text-red-500 text-xs mt-1">{errors.motDePasse}</p>}
-            </div>
+            <Input
+              type="password"
+              name="motDePasse"
+              label="Mot de passe"
+              value={form.motDePasse}
+              onChange={handleChange}
+              error={errors.motDePasse}
+              icon={<Lock className="w-4 h-4" />}
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold text-sm hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Se connecter
-                </>
-              )}
-            </button>
+            <Button type="submit" loading={loading} fullWidth icon={!loading ? <LogIn className="w-4 h-4" /> : undefined}>
+              Se connecter
+            </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-slate-500 mt-6">
             Pas encore de compte ?{' '}
-            <Link to="/inscription" className="text-blue-600 font-semibold hover:underline">
+            <Link to="/inscription" className="text-primary font-semibold hover:underline">
               S'inscrire
             </Link>
           </p>

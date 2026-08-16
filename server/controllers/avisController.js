@@ -65,7 +65,8 @@ const createAvis = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Vous avez déjà donné votre avis sur cette annonce.' });
     }
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -104,7 +105,8 @@ const getAvisByUser = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -120,7 +122,8 @@ const getMesAvis = async (req, res) => {
     res.json(avis);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -152,7 +155,8 @@ const signalerAvis = async (req, res) => {
     res.json({ message: 'Avis signalé.', signalements: avis.signalements });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

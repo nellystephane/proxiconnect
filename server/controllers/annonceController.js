@@ -83,7 +83,8 @@ const createAnnonce = async (req, res) => {
     res.status(201).json(annonce);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -133,7 +134,8 @@ const getAnnonces = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -161,7 +163,8 @@ const getAnnonceById = async (req, res) => {
     res.json(annonce);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -201,7 +204,8 @@ const updateAnnonce = async (req, res) => {
     res.json(updated);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -227,7 +231,8 @@ const deleteAnnonce = async (req, res) => {
     res.json({ message: 'Annonce supprimée avec succès.' });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -252,7 +257,8 @@ const getMesAnnonces = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

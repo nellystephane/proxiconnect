@@ -15,7 +15,8 @@ const getNotifications = async (req, res) => {
 
     res.json(notifications);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -26,7 +27,8 @@ const getNombreNonLues = async (req, res) => {
     const total = await Notification.countDocuments({ destinataire: req.user._id, lu: false });
     res.json({ total });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -43,7 +45,8 @@ const marquerCommeLue = async (req, res) => {
     await notification.save();
     res.json(notification);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -54,7 +57,8 @@ const marquerToutesCommeLues = async (req, res) => {
     await Notification.updateMany({ destinataire: req.user._id, lu: false }, { lu: true });
     res.json({ message: 'Toutes les notifications ont été marquées comme lues.' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

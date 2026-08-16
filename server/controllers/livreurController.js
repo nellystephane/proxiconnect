@@ -20,7 +20,8 @@ const createLivreur = async (req, res) => {
 
     res.status(201).json(livreur);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -32,7 +33,8 @@ const getMonProfil = async (req, res) => {
     if (!livreur) return res.status(404).json({ message: "Vous n'avez pas encore de profil livreur." });
     res.json(livreur);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -51,7 +53,8 @@ const updateMonProfil = async (req, res) => {
     await livreur.save();
     res.json(livreur);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -69,7 +72,8 @@ const getLivreurs = async (req, res) => {
 
     res.json(livreurs);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -82,7 +86,8 @@ const getLivreurPublic = async (req, res) => {
     if (!livreur) return res.status(404).json({ message: 'Livreur introuvable.' });
     res.json(livreur);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

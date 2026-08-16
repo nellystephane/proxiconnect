@@ -118,7 +118,8 @@ const createPaiementPro = async (req, res) => {
 
     res.status(201).json(paiement);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -143,7 +144,8 @@ const getStatutPro = async (req, res) => {
 
     res.json(espace.abonnementPro || { actif: false, plan: null, dateFin: null });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -217,7 +219,8 @@ const createPaiement = async (req, res) => {
     res.status(201).json(paiement);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -249,7 +252,8 @@ const getStatutAbonnement = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -263,7 +267,8 @@ const getHistorique = async (req, res) => {
     res.json(paiements);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -327,7 +332,8 @@ const confirmerPaiement = async (req, res) => {
     res.json({ message: 'Paiement confirmé.', paiement });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -394,7 +400,8 @@ const simulerConfirmation = async (req, res) => {
     res.json({ message: 'Paiement confirmé avec succès.', paiement });
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
@@ -415,7 +422,8 @@ const getPaiementById = async (req, res) => {
     res.json(paiement);
 
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 

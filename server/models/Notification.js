@@ -2,14 +2,18 @@ const mongoose = require('mongoose');
 
 const TYPES_NOTIFICATION = [
   'nouveau_message',
+  'piece_jointe',
   'nouvelle_commande',
   'statut_commande',
   'nouvelle_reservation',
   'statut_reservation',
   'demande_livraison_acceptee',
+  'nouvelle_livraison',
   'statut_livraison',
   'nouvel_avis',
-  'paiement_confirme'
+  'paiement_confirme',
+  'demande_evaluation',
+  'nouvelle_evaluation_livreur'
 ];
 
 // ─── Notification ───

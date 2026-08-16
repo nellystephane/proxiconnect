@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Building2, Plus, Minus, Pencil, Trash2, BedDouble, CalendarCheck, AlertCircle,
-  X as XIcon, Check, ExternalLink, Loader2, Crown
+  Check, ExternalLink, Crown, LayoutDashboard, TrendingUp, PercentCircle,
+  CalendarDays,
 } from 'lucide-react';
 import API from '../../api/axios';
+import { Spinner, Modal, Card, Button, Input, Textarea, Select, Badge } from '../../components/ui';
 import ImageUploader from '../../components/ImageUploader';
 import AbonnementProWidget from '../../components/AbonnementProWidget/AbonnementProWidget';
 import type { Hotel, Chambre, Reservation, AbonnementPro } from '../../types';
 
 const MAX_PHOTOS_CHAMBRE = 10;
 
-type Onglet = 'chambres' | 'reservations' | 'parametres';
+type Onglet = 'apercu' | 'chambres' | 'reservations' | 'parametres';
 
 const STATUTS_RESERVATION: Reservation['statut'][] = ['en_attente', 'confirmée', 'annulée', 'terminée'];
 
@@ -22,7 +24,7 @@ const MonHotel = () => {
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [chambres, setChambres] = useState<Chambre[]>([]);
   const [erreur, setErreur] = useState('');
-  const [onglet, setOnglet] = useState<Onglet>('chambres');
+  const [onglet, setOnglet] = useState<Onglet>('apercu');
 
   const [creationForm, setCreationForm] = useState({ nom: '', description: '', ville: '' });
   const [creationEnCours, setCreationEnCours] = useState(false);
@@ -48,13 +50,16 @@ const MonHotel = () => {
 
   useEffect(() => { charger(); }, [charger]);
 
+  // Chargées dès que l'hôtel existe : l'aperçu (taux d'occupation, revenus,
+  // prochaines réservations) en a besoin immédiatement, pas seulement une
+  // fois l'onglet "Réservations" ouvert.
   useEffect(() => {
-    if (onglet !== 'reservations' || !hotel) return;
+    if (!hotel) return;
     setReservationsErreur(false);
     API.get('/reservations/recues')
       .then(({ data }) => setReservations(data))
       .catch(() => setReservationsErreur(true));
-  }, [onglet, hotel]);
+  }, [hotel]);
 
   const handleCreer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +79,7 @@ const MonHotel = () => {
     }
   };
 
-  const ouvrirCreationChambre = () => { setChambreErreur(''); setChambreModal({ mode: 'creation', chambre: { ...chambreVide } }); };
+  const ouvrirCreationChambre = () => { setChambreErreur(''); setChambreModal({ mode: 'creation', chambre: { ...chambreVide } }); setOnglet('chambres'); };
   const ouvrirEditionChambre = (c: Chambre) => {
     setChambreErreur('');
     setChambreModal({ mode: 'edition', id: c._id, chambre: { type: c.type, prixParNuit: String(c.prixParNuit), capacite: String(c.capacite), photos: c.photos || [], estMisEnAvant: c.estMisEnAvant } });
@@ -132,27 +137,49 @@ const MonHotel = () => {
     }
   };
 
-  if (chargement) return <div className="flex items-center justify-center min-h-[50vh]"><div className="h-8 w-8 border-2 border-blue-200 border-t-[#007AFF] rounded-full animate-spin" /></div>;
+  // ─── Statistiques dérivées des chambres/réservations déjà chargées ───
+  const reservationsValides = useMemo(() => reservations.filter((r) => r.statut !== 'annulée'), [reservations]);
+  const chiffreAffaires = useMemo(() => reservationsValides.reduce((s, r) => s + r.montantTotal, 0), [reservationsValides]);
+  const chambresDisponibles = useMemo(() => chambres.filter((c) => c.disponible).length, [chambres]);
+
+  const tauxOccupation = useMemo(() => {
+    if (chambres.length === 0) return 0;
+    const maintenant = new Date();
+    const chambresOccupees = new Set(
+      reservationsValides
+        .filter((r) => r.statut === 'confirmée' && new Date(r.dateArrivee) <= maintenant && new Date(r.dateDepart) >= maintenant)
+        .map((r) => (typeof r.chambre === 'object' ? r.chambre._id : r.chambre))
+    );
+    return Math.round((chambresOccupees.size / chambres.length) * 100);
+  }, [chambres, reservationsValides]);
+
+  const prochainesReservations = useMemo(() => {
+    const maintenant = new Date();
+    return reservationsValides
+      .filter((r) => new Date(r.dateDepart) >= maintenant)
+      .sort((a, b) => new Date(a.dateArrivee).getTime() - new Date(b.dateArrivee).getTime())
+      .slice(0, 5);
+  }, [reservationsValides]);
+
+  if (chargement) return <div className="flex items-center justify-center min-h-[50vh]"><Spinner size="lg" /></div>;
 
   if (!hotel) {
     return (
       <div className="max-w-md mx-auto pb-24 animate-fade-in">
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center mb-3">
-            <Building2 className="w-6 h-6 text-[#007AFF]" />
+        <div className="text-center mb-6 animate-slide-up">
+          <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #A855F7 0%, #6366F1 100%)', boxShadow: '0 10px 30px -8px rgba(168,85,247,0.4)' }}>
+            <Building2 className="w-6 h-6 text-white" strokeWidth={2.1} />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-1">Créez votre établissement</h1>
+          <h1 className="text-xl font-bold text-slate-900 mb-1 tracking-tight">Créez votre établissement</h1>
           <p className="text-sm text-slate-500">Présentez vos chambres et recevez des réservations.</p>
         </div>
 
-        <form onSubmit={handleCreer} className="glass rounded-2xl p-5 space-y-4">
-          <input value={creationForm.nom} onChange={(e) => setCreationForm({ ...creationForm, nom: e.target.value })} placeholder="Nom de l'établissement" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
-          <textarea value={creationForm.description} onChange={(e) => setCreationForm({ ...creationForm, description: e.target.value })} placeholder="Décrivez votre établissement" rows={3} className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-          <input value={creationForm.ville} onChange={(e) => setCreationForm({ ...creationForm, ville: e.target.value })} placeholder="Ville" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
+        <form onSubmit={handleCreer} className="glass-solid rounded-[22px] p-5 space-y-4 animate-slide-up" style={{ animationDelay: '60ms' }}>
+          <Input value={creationForm.nom} onChange={(e) => setCreationForm({ ...creationForm, nom: e.target.value })} placeholder="Nom de l'établissement" />
+          <Textarea value={creationForm.description} onChange={(e) => setCreationForm({ ...creationForm, description: e.target.value })} placeholder="Décrivez votre établissement" rows={3} />
+          <Input value={creationForm.ville} onChange={(e) => setCreationForm({ ...creationForm, ville: e.target.value })} placeholder="Ville" />
           {creationErreur && <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{creationErreur}</p>}
-          <button type="submit" disabled={creationEnCours} className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2">
-            {creationEnCours && <Loader2 className="w-4 h-4 animate-spin" />} Créer mon établissement
-          </button>
+          <Button type="submit" loading={creationEnCours} fullWidth size="lg">Créer mon établissement</Button>
         </form>
       </div>
     );
@@ -160,41 +187,111 @@ const MonHotel = () => {
 
   return (
     <div className="max-w-3xl mx-auto pb-24 animate-fade-in">
-      <div className="glass rounded-2xl p-5 mb-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {hotel.logo ? <img src={hotel.logo} alt={hotel.nom} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-slate-400" />}
+      {/* ── Cockpit établissement ── */}
+      <Card variant="glass-solid" className="mb-5 relative overflow-hidden animate-slide-up">
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.16), transparent 70%)' }} aria-hidden="true" />
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0" style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.14), rgba(99,102,241,0.12))', boxShadow: 'var(--glass-specular)' }}>
+            {hotel.logo ? <img src={hotel.logo} alt={hotel.nom} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-violet-500" strokeWidth={2.1} />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-bold text-slate-900 truncate">{hotel.nom}</h1>
+            <p className="text-xs text-slate-400">{chambres.length} chambre{chambres.length > 1 ? 's' : ''}</p>
+          </div>
+          <Link to={`/hotel/${hotel._id}`} target="_blank" className="glass-pill flex items-center gap-1.5 text-xs font-semibold text-violet-500 rounded-full px-3 py-1.5 no-underline hover:-translate-y-0.5 transition-transform flex-shrink-0">
+            Voir la fiche <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-slate-900 truncate">{hotel.nom}</h1>
-          <p className="text-xs text-slate-400">{chambres.length} chambre{chambres.length > 1 ? 's' : ''}</p>
-        </div>
-        <Link to={`/hotel/${hotel._id}`} target="_blank" className="flex items-center gap-1.5 text-xs font-semibold text-[#007AFF] hover:underline flex-shrink-0">
-          Voir la fiche <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </div>
+      </Card>
 
       {erreur && <p className="text-xs text-red-500 mb-4 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{erreur}</p>}
 
-      <div className="flex gap-1 p-1 rounded-xl bg-slate-100 mb-5 w-fit">
-        {([{ id: 'chambres', label: 'Chambres', icon: BedDouble }, { id: 'reservations', label: 'Réservations', icon: CalendarCheck }, { id: 'parametres', label: 'Abonnement', icon: Crown }] as const).map((o) => (
-          <button key={o.id} onClick={() => setOnglet(o.id)} className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition ${onglet === o.id ? 'bg-white text-[#007AFF] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-            <o.icon className="w-4 h-4" /> {o.label}
+      {/* ── Onglets en pilules verre ── */}
+      <div className="flex gap-1.5 p-1.5 rounded-full glass-light mb-5 w-fit overflow-x-auto max-w-full">
+        {([
+          { id: 'apercu', label: 'Aperçu', icon: LayoutDashboard },
+          { id: 'chambres', label: 'Chambres', icon: BedDouble },
+          { id: 'reservations', label: 'Réservations', icon: CalendarCheck },
+          { id: 'parametres', label: 'Abonnement', icon: Crown },
+        ] as const).map((o) => (
+          <button
+            key={o.id}
+            onClick={() => setOnglet(o.id)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap ${onglet === o.id ? 'text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+            style={onglet === o.id ? { background: 'linear-gradient(135deg, #A855F7 0%, #6366F1 100%)' } : undefined}
+          >
+            <o.icon className="w-3.5 h-3.5" /> {o.label}
           </button>
         ))}
       </div>
 
+      {onglet === 'apercu' && (
+        <div className="space-y-5 animate-fade-in">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card variant="glass">
+              <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center mb-2"><BedDouble className="w-4 h-4" strokeWidth={2.2} /></div>
+              <p className="text-lg font-bold text-slate-900">{chambresDisponibles}/{chambres.length}</p>
+              <p className="text-xs text-slate-500">Chambres disponibles</p>
+            </Card>
+            <Card variant="glass">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-2"><PercentCircle className="w-4 h-4" strokeWidth={2.2} /></div>
+              <p className="text-lg font-bold text-slate-900">{tauxOccupation}%</p>
+              <p className="text-xs text-slate-500">Taux d'occupation</p>
+            </Card>
+            <Card variant="glass">
+              <div className="w-9 h-9 rounded-xl bg-amber-400/10 text-amber-500 flex items-center justify-center mb-2"><CalendarCheck className="w-4 h-4" strokeWidth={2.2} /></div>
+              <p className="text-lg font-bold text-slate-900">{reservationsValides.length}</p>
+              <p className="text-xs text-slate-500">Réservations</p>
+            </Card>
+            <Card variant="glass">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2"><TrendingUp className="w-4 h-4" strokeWidth={2.2} /></div>
+              <p className="text-lg font-bold text-slate-900">{chiffreAffaires.toLocaleString('fr-FR')} <span className="text-xs font-medium text-slate-400">XOF</span></p>
+              <p className="text-xs text-slate-500">Revenus</p>
+            </Card>
+          </div>
+
+          <Card variant="glass">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarDays className="w-4 h-4 text-violet-500" strokeWidth={2.2} />
+              <h3 className="text-sm font-bold text-slate-800">Prochaines réservations</h3>
+            </div>
+            {reservationsErreur ? (
+              <p className="text-xs text-red-500 py-4 text-center flex items-center justify-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />Impossible de charger vos réservations.</p>
+            ) : prochainesReservations.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Aucune réservation à venir.</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {prochainesReservations.map((r) => (
+                  <li key={r._id} className="flex items-center justify-between text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-800 truncate">
+                        {typeof r.client === 'object' ? `${r.client.prenom} ${r.client.nom}` : 'Client'} · {typeof r.chambre === 'object' ? r.chambre.type : 'Chambre'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(r.dateArrivee).toLocaleDateString('fr-FR')} → {new Date(r.dateDepart).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <Badge tone={r.statut === 'confirmée' ? 'success' : 'warning'} size="sm" className="capitalize flex-shrink-0">{r.statut}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Button onClick={ouvrirCreationChambre} fullWidth size="lg" icon={<Plus className="w-4 h-4" />}>Ajouter une chambre</Button>
+        </div>
+      )}
+
       {onglet === 'chambres' && (
         <div>
-          <button onClick={ouvrirCreationChambre} className="w-full mb-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm font-semibold text-slate-500 hover:border-[#007AFF] hover:text-[#007AFF] transition flex items-center justify-center gap-2">
-            <Plus className="w-4 h-4" /> Ajouter une chambre
-          </button>
+          <Button onClick={ouvrirCreationChambre} variant="outline" fullWidth className="mb-4" icon={<Plus className="w-4 h-4" />}>Ajouter une chambre</Button>
 
           {chambres.length === 0 ? (
             <p className="text-center text-sm text-slate-400 py-10">Aucune chambre pour le moment.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {chambres.map((c) => (
-                <div key={c._id} className="glass rounded-2xl p-3 flex gap-3">
+                <Card key={c._id} variant="glass" padding="sm" className="flex gap-3">
                   <div className="w-16 h-16 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {c.photos?.[0] ? <img src={c.photos[0]} alt={c.type} className="w-full h-full object-cover" /> : <BedDouble className="w-5 h-5 text-slate-300" />}
                   </div>
@@ -202,13 +299,13 @@ const MonHotel = () => {
                     <p className="text-sm font-semibold text-slate-900 truncate">{c.type}</p>
                     <p className="text-xs text-slate-400 mb-1">{c.capacite} pers.</p>
                     <p className="text-sm font-bold text-slate-900">{c.prixParNuit.toLocaleString('fr-FR')} XOF / nuit</p>
-                    {!c.disponible && <p className="text-[11px] text-red-500">Hors service</p>}
+                    {!c.disponible && <Badge tone="danger" size="sm" className="mt-1">Hors service</Badge>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <button onClick={() => ouvrirEditionChambre(c)} className="p-1.5 rounded-lg hover:bg-slate-100"><Pencil className="w-3.5 h-3.5 text-slate-500" /></button>
                     <button onClick={() => handleSupprimerChambre(c._id)} disabled={suppressionId === c._id} className="p-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -223,7 +320,7 @@ const MonHotel = () => {
             <p className="text-center text-sm text-slate-400 py-10">Aucune réservation reçue pour le moment.</p>
           ) : (
             reservations.map((r) => (
-              <div key={r._id} className="glass rounded-2xl p-4">
+              <Card key={r._id} variant="glass">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-semibold text-slate-900">{typeof r.client === 'object' ? `${r.client.prenom} ${r.client.nom}` : 'Client'}</p>
                   <p className="text-sm font-bold text-slate-900">{r.montantTotal.toLocaleString('fr-FR')} XOF</p>
@@ -231,15 +328,15 @@ const MonHotel = () => {
                 <p className="text-xs text-slate-500 mb-2">
                   {typeof r.chambre === 'object' ? r.chambre.type : 'Chambre'} · {new Date(r.dateArrivee).toLocaleDateString('fr-FR')} → {new Date(r.dateDepart).toLocaleDateString('fr-FR')} ({r.nombreNuits} nuit{r.nombreNuits > 1 ? 's' : ''})
                 </p>
-                <select
+                <Select
                   value={r.statut}
                   onChange={(e) => handleChangerStatut(r._id, e.target.value as Reservation['statut'])}
                   disabled={majStatutId === r._id}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 outline-none disabled:opacity-50"
+                  className="!py-1.5 !text-xs"
                 >
                   {STATUTS_RESERVATION.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                </select>
-              </div>
+                </Select>
+              </Card>
             ))
           )}
         </div>
@@ -255,93 +352,69 @@ const MonHotel = () => {
       )}
 
       {chambreModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setChambreModal(null)}>
-          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto glass rounded-3xl shadow-2xl p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-slate-900">{chambreModal.mode === 'creation' ? 'Nouvelle chambre' : 'Modifier la chambre'}</h2>
-              <button onClick={() => setChambreModal(null)} className="p-1.5 rounded-full hover:bg-slate-100"><XIcon className="w-4 h-4 text-slate-500" /></button>
+        <Modal open onClose={() => setChambreModal(null)} title={chambreModal.mode === 'creation' ? 'Nouvelle chambre' : 'Modifier la chambre'}>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Photos <span className="text-slate-400 normal-case font-normal">({chambreModal.chambre.photos.filter(Boolean).length}/{MAX_PHOTOS_CHAMBRE})</span>
+                </p>
+                {chambreModal.chambre.photos.length < MAX_PHOTOS_CHAMBRE && (
+                  <button type="button" onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: [...m.chambre.photos, ''] } })} className="flex items-center gap-1 text-xs font-medium text-violet-500 hover:text-violet-600 transition-colors px-2.5 py-1 rounded-lg hover:bg-violet-500/10">
+                    <Plus className="w-3.5 h-3.5" /> Ajouter
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(chambreModal.chambre.photos.length > 0 ? chambreModal.chambre.photos : ['']).map((url, idx) => (
+                  <div key={idx} className={`relative group rounded-xl border-2 border-dashed overflow-hidden aspect-square ${url ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:border-violet-400 hover:bg-violet-500/10'}`}>
+                    <ImageUploader
+                      currentImage={url}
+                      onUpload={(nouvelleUrl) => setChambreModal((m) => {
+                        if (!m) return m;
+                        const photos = [...m.chambre.photos];
+                        if (photos.length === 0) photos.push(nouvelleUrl); else photos[idx] = nouvelleUrl;
+                        return { ...m, chambre: { ...m.chambre, photos } };
+                      })}
+                    />
+                    {idx === 0 && url && <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-violet-500 text-white text-[9px] font-bold rounded-full pointer-events-none">COUVERTURE</div>}
+                    {chambreModal.chambre.photos.length > 1 && (
+                      <button type="button" onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: m.chambre.photos.filter((_, i) => i !== idx) } })} className="glass-control absolute top-1.5 right-1.5 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" aria-label="Supprimer">
+                        <Minus className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Photos <span className="text-slate-400 normal-case font-normal">({chambreModal.chambre.photos.filter(Boolean).length}/{MAX_PHOTOS_CHAMBRE})</span>
-                  </p>
-                  {chambreModal.chambre.photos.length < MAX_PHOTOS_CHAMBRE && (
-                    <button
-                      type="button"
-                      onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: [...m.chambre.photos, ''] } })}
-                      className="flex items-center gap-1 text-xs font-medium text-[#007AFF] hover:text-blue-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-blue-50"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Ajouter
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(chambreModal.chambre.photos.length > 0 ? chambreModal.chambre.photos : ['']).map((url, idx) => (
-                    <div
-                      key={idx}
-                      className={`relative group rounded-xl border-2 border-dashed overflow-hidden aspect-square ${
-                        url ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white/50 hover:border-[#007AFF] hover:bg-blue-50/30'
-                      }`}
-                    >
-                      <ImageUploader
-                        currentImage={url}
-                        onUpload={(nouvelleUrl) => setChambreModal((m) => {
-                          if (!m) return m;
-                          const photos = [...m.chambre.photos];
-                          if (photos.length === 0) photos.push(nouvelleUrl); else photos[idx] = nouvelleUrl;
-                          return { ...m, chambre: { ...m.chambre, photos } };
-                        })}
-                      />
-                      {idx === 0 && url && (
-                        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-[#007AFF] text-white text-[9px] font-bold rounded-full pointer-events-none">COUVERTURE</div>
-                      )}
-                      {chambreModal.chambre.photos.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, photos: m.chambre.photos.filter((_, i) => i !== idx) } })}
-                          className="glass-control absolute top-1.5 right-1.5 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                          aria-label="Supprimer"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <Input value={chambreModal.chambre.type} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, type: e.target.value } })} placeholder="Type (ex : Chambre double)" />
 
-              <input value={chambreModal.chambre.type} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, type: e.target.value } })} placeholder="Type (ex : Chambre double)" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
-
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" value={chambreModal.chambre.prixParNuit} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, prixParNuit: e.target.value } })} placeholder="Prix / nuit (XOF)" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
-                <input type="number" value={chambreModal.chambre.capacite} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, capacite: e.target.value } })} placeholder="Capacité (pers.)" className="w-full px-4 py-3 bg-gray-100/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400" />
-              </div>
-
-              {chambreModal.mode === 'edition' && (
-                <label className={`flex items-center gap-2 text-sm ${hotel?.abonnementPro?.actif ? 'text-slate-600' : 'text-slate-300'}`}>
-                  <input
-                    type="checkbox"
-                    checked={chambreModal.chambre.estMisEnAvant}
-                    disabled={!hotel?.abonnementPro?.actif}
-                    onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, estMisEnAvant: e.target.checked } })}
-                    className="w-4 h-4 rounded accent-amber-500 disabled:opacity-40"
-                  />
-                  Mettre en avant {!hotel?.abonnementPro?.actif && <span className="text-xs text-amber-500 ml-1">(nécessite l'abonnement Pro)</span>}
-                </label>
-              )}
-
-              {chambreErreur && <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{chambreErreur}</p>}
-
-              <button onClick={handleSauverChambre} disabled={chambreEnvoi} className="w-full py-3.5 bg-[#007AFF] text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-60 flex items-center justify-center gap-2">
-                {chambreEnvoi ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                {chambreModal.mode === 'creation' ? 'Ajouter la chambre' : 'Enregistrer'}
-              </button>
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="number" value={chambreModal.chambre.prixParNuit} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, prixParNuit: e.target.value } })} placeholder="Prix / nuit (XOF)" />
+              <Input type="number" value={chambreModal.chambre.capacite} onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, capacite: e.target.value } })} placeholder="Capacité (pers.)" />
             </div>
+
+            {chambreModal.mode === 'edition' && (
+              <label className={`flex items-center gap-2 text-sm ${hotel?.abonnementPro?.actif ? 'text-slate-600' : 'text-slate-300'}`}>
+                <input
+                  type="checkbox"
+                  checked={chambreModal.chambre.estMisEnAvant}
+                  disabled={!hotel?.abonnementPro?.actif}
+                  onChange={(e) => setChambreModal((m) => m && { ...m, chambre: { ...m.chambre, estMisEnAvant: e.target.checked } })}
+                  className="w-4 h-4 rounded accent-amber-500 disabled:opacity-40"
+                />
+                Mettre en avant {!hotel?.abonnementPro?.actif && <span className="text-xs text-amber-500 ml-1">(nécessite l'abonnement Pro)</span>}
+              </label>
+            )}
+
+            {chambreErreur && <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{chambreErreur}</p>}
+
+            <Button onClick={handleSauverChambre} loading={chambreEnvoi} fullWidth icon={<Check className="w-4 h-4" />}>
+              {chambreModal.mode === 'creation' ? 'Ajouter la chambre' : 'Enregistrer'}
+            </Button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

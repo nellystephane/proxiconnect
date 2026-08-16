@@ -167,7 +167,7 @@ const Accueil = () => {
 
   // ===== RENDER =====
   return (
-    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden text-slate-900 selection:bg-primary/20 selection:text-primary">
       
       {/* ===== BACKGROUND LUMIÈRE & TEXTURE ===== */}
       {/* Trio de halos "liquid glass" (bleu / indigo / menthe) — bas-contraste
@@ -196,14 +196,14 @@ const Accueil = () => {
               >
                 <MapPin className="w-5 h-5" strokeWidth={2.4} />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">Proxi<span className="text-[#007AFF]">Connect</span></span>
+              <span className="text-xl font-bold tracking-tight text-slate-900">Proxi<span className="text-primary">Connect</span></span>
             </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => (
                 <a key={link.label} href={link.href} onClick={(e) => handleNavClick(e, link.href)}
-                  className={`text-sm font-medium transition-colors duration-300 hover:text-[#007AFF] ${activeSection === link.href.slice(1) ? 'text-[#007AFF]' : 'text-slate-600'}`}>
+                  className={`text-sm font-medium transition-colors duration-300 hover:text-primary ${activeSection === link.href.slice(1) ? 'text-primary' : 'text-slate-600'}`}>
                   {link.label}
                 </a>
               ))}
@@ -211,14 +211,14 @@ const Accueil = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/connexion" className="text-sm font-medium text-slate-600 hover:text-[#007AFF] transition-colors px-4 py-2 rounded-lg hover:bg-black/[0.04]">Se connecter</Link>
+              <Link to="/connexion" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors px-4 py-2 rounded-lg hover:bg-black/[0.04]">Se connecter</Link>
               <Link to="/inscription" className="btn-liquid-primary rounded-full px-6 py-2.5 text-sm no-underline">
                 S'inscrire gratuitement <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* Mobile Menu Toggle */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="glass-light lg:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-90 hover:bg-[#007AFF]/8" aria-label="Menu mobile">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="glass-light lg:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-90 hover:bg-primary/8" aria-label="Menu mobile">
               {mobileMenuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
             </button>
           </div>
@@ -228,7 +228,7 @@ const Accueil = () => {
         <div className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="glass-solid mx-4 mb-4 rounded-2xl p-4 shadow-lg shadow-slate-200/40 space-y-1">
             {navLinks.map((link) => (
-              <a key={link.label} href={link.href} onClick={(e) => handleNavClick(e, link.href)} className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-[#007AFF] transition-colors">{link.label}</a>
+              <a key={link.label} href={link.href} onClick={(e) => handleNavClick(e, link.href)} className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-primary transition-colors">{link.label}</a>
             ))}
             <div className="border-t border-slate-100 my-2 pt-2 space-y-2">
               <Link to="/connexion" className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-black/[0.04] transition-colors text-center">Se connecter</Link>
@@ -244,12 +244,12 @@ const Accueil = () => {
         {/* ========== HERO ========== */}
         <section id="hero" ref={(el) => sectionsRef.current[0] = el as HTMLDivElement} className="flex flex-col items-center space-y-10 text-center animate-on-scroll">
           <div className="glass-pill inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-            <Sparkles className="w-4 h-4 text-[#007AFF] animate-spin-slow" />
+            <Sparkles className="w-4 h-4 text-primary animate-spin-slow" />
             <span>La plateforme locale de confiance qui relie talents & voisins</span>
           </div>
 
           <h1 className="max-w-5xl text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
-            Réinventez le <span className="text-[#007AFF]">commerce de proximité</span>.
+            Réinventez le <span className="text-primary">commerce de proximité</span>.
           </h1>
 
           <p className="max-w-3xl text-lg sm:text-xl text-slate-600 leading-relaxed">
@@ -261,7 +261,7 @@ const Accueil = () => {
               <span>Commencer gratuitement</span>
               <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
-            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="btn-liquid-ghost group rounded-full px-8 py-4 text-base no-underline hover:text-[#007AFF]">
+            <a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="btn-liquid-ghost group rounded-full px-8 py-4 text-base no-underline hover:text-primary">
               Explorer les annonces <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </a>
           </div>
@@ -276,7 +276,7 @@ const Accueil = () => {
         {/* ========== ANNONCES / CATÉGORIES ========== */}
         <section id="annonces" ref={(el) => sectionsRef.current[1] = el as HTMLDivElement} className="animate-on-scroll space-y-12">
           <div className="text-center space-y-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-sm font-semibold text-[#007AFF] border border-blue-100">
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-sm font-semibold text-primary border border-blue-100">
               <Search className="w-4 h-4" /> Catalogue vivant
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Trouvez le service exact, à deux pas de chez vous</h2>
@@ -290,10 +290,10 @@ const Accueil = () => {
                 <div className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${cat.color} text-white shadow-md transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
                   <cat.icon className="w-7 h-7" />
                 </div>
-                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#007AFF] transition-colors">{cat.name}</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-primary transition-colors">{cat.name}</span>
                 <span className="text-xs text-slate-400">{cat.count} annonces</span>
                 <span className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight className="w-4 h-4 text-[#007AFF]" />
+                  <ChevronRight className="w-4 h-4 text-primary" />
                 </span>
               </Link>
             ))}
@@ -340,7 +340,7 @@ const Accueil = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {features.map((feat, i) => (
               <div key={i} className="glass group flex items-start gap-5 rounded-2xl p-7 transition-all duration-500 hover:border-blue-400/40 hover:shadow-lg hover:-translate-y-2">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#007AFF] transition-all duration-500 group-hover:bg-[#007AFF] group-hover:text-white">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-white">
                   <feat.icon className="w-7 h-7" />
                 </div>
                 <div>
@@ -369,7 +369,7 @@ const Accueil = () => {
                   {t.avatar ? (
                     <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-[#007AFF] font-bold text-sm">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-primary font-bold text-sm">
                       {t.name.charAt(0)}
                     </div>
                   )}
@@ -401,7 +401,7 @@ const Accueil = () => {
               <div key={i} className="glass rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300/40">
                 <button onClick={() => toggleFaq(i)} className="w-full flex items-center justify-between p-5 text-left focus:outline-none">
                   <span className="font-semibold text-slate-900 pr-4">{faq.q}</span>
-                  <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openFaq === i ? 'rotate-90 text-[#007AFF]' : ''}`} />
+                  <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openFaq === i ? 'rotate-90 text-primary' : ''}`} />
                 </button>
                 <div className={`overflow-hidden transition-all duration-500 ${openFaq === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                   <div className="px-5 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.a}</div>
@@ -440,13 +440,13 @@ const Accueil = () => {
             <div className="relative z-10 space-y-8">
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 max-w-3xl mx-auto">
                 Votre quartier a besoin de vos talents.<br />
-                <span className="text-[#007AFF]">Rejoignez la communauté dès aujourd'hui.</span>
+                <span className="text-primary">Rejoignez la communauté dès aujourd'hui.</span>
               </h2>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/inscription" className="btn-liquid-primary group rounded-full px-10 py-4 text-base no-underline">
                   Créer un compte gratuit <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
-                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="btn-liquid-ghost rounded-full px-8 py-4 text-base no-underline hover:text-[#007AFF]">
+                <a href="#comment" onClick={(e) => handleNavClick(e, '#comment')} className="btn-liquid-ghost rounded-full px-8 py-4 text-base no-underline hover:text-primary">
                   Voir comment ça marche
                 </a>
               </div>
@@ -472,7 +472,7 @@ const Accueil = () => {
               </p>
               <div className="flex gap-4 pt-2">
                 {['Twitter', 'Instagram', 'LinkedIn'].map((social) => (
-                  <a key={social} href="#" className="text-xs font-medium text-slate-400 hover:text-[#007AFF] transition-colors">{social}</a>
+                  <a key={social} href="#" className="text-xs font-medium text-slate-400 hover:text-primary transition-colors">{social}</a>
                 ))}
               </div>
             </div>
@@ -480,20 +480,20 @@ const Accueil = () => {
             <div>
               <h4 className="text-sm font-semibold text-slate-900 mb-4">Navigation</h4>
               <ul className="space-y-3 text-sm text-slate-500">
-                <li><a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="hover:text-[#007AFF] transition-colors">Annonces</a></li>
-                <li><a href="#apropos" onClick={(e) => handleNavClick(e, '#apropos')} className="hover:text-[#007AFF] transition-colors">À propos</a></li>
-                <li><Link to="/inscription" className="hover:text-[#007AFF] transition-colors">S'inscrire</Link></li>
-                <li><Link to="/connexion" className="hover:text-[#007AFF] transition-colors">Se connecter</Link></li>
+                <li><a href="#annonces" onClick={(e) => handleNavClick(e, '#annonces')} className="hover:text-primary transition-colors">Annonces</a></li>
+                <li><a href="#apropos" onClick={(e) => handleNavClick(e, '#apropos')} className="hover:text-primary transition-colors">À propos</a></li>
+                <li><Link to="/inscription" className="hover:text-primary transition-colors">S'inscrire</Link></li>
+                <li><Link to="/connexion" className="hover:text-primary transition-colors">Se connecter</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-sm font-semibold text-slate-900 mb-4">Légal & Support</h4>
               <ul className="space-y-3 text-sm text-slate-500">
-                <li><a href="#" className="hover:text-[#007AFF] transition-colors">Conditions d'utilisation</a></li>
-                <li><a href="#" className="hover:text-[#007AFF] transition-colors">Politique de confidentialité</a></li>
-                <li><a href="#" className="hover:text-[#007AFF] transition-colors">Mentions légales</a></li>
-                <li><a href="#" className="hover:text-[#007AFF] transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Conditions d'utilisation</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Politique de confidentialité</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Mentions légales</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>
